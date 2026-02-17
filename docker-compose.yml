@@ -1,0 +1,270 @@
+# ============================================================================
+# AtlasRAG Local Development Environment
+# ============================================================================
+# This Docker Compose file sets up the complete AtlasRAG stack for local development
+#
+# Quick Start:
+#   docker compose up                  # Start all services
+#   docker compose down                # Stop all services
+#   docker compose logs -f             # View live logs
+#   docker compose logs postgres       # View specific service logs
+#   docker compose exec atlasrag-api bash  # Execute command in API container
+#
+# Advanced:
+#   docker compose up -d               # Start in detached mode
+#   docker compose build --no-cache    # Rebuild images without cache
+#   docker compose --profile observability up  # Include Prometheus/Grafana
+#
+# Services Provided:
+# - atlasrag-api:   FastAPI application (port 8000)
+# - postgres:       Metadata database (port 5432)
+# - chroma:         Vector database (port 8001)
+# - ollama:         Local LLM runtime (port 11434)
+# - prometheus:     Metrics collection (port 9090, optional)
+# - grafana:        Metrics visualization (port 3000, optional)
+# ============================================================================
+
+version: '3.9'
+
+services:
+  # --------------------------------------------------------------------------
+  # PostgreSQL Database - Metadata storage and document tracking
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: atlasrag-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atlasrag
+      POSTGRES_USER: atlasrag
+      POSTGRES_PASSWORD: atlasrag_dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.utf8"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Data persistence
+      - postgres_data:/var/lib/postgresql/data
+      # Initialization script runs once on first startup
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlasrag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atlasrag-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --------------------------------------------------------------------------
+  # Chroma - Vector Database for semantic search
+  # --------------------------------------------------------------------------
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: atlasrag-chroma
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    volumes:
+      # Persist embeddings and metadata
+      - chroma_data:/chroma/chroma
+    environment:
+      # Enable persistence to disk
+      IS_PERSISTENT: "TRUE"
+      PERSIST_DIRECTORY: /chroma/chroma
+      # Disable telemetry
+      ANONYMIZED_TELEMETRY: "FALSE"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - atlasrag-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --------------------------------------------------------------------------
+  # Ollama - Local LLM Runtime (no GPU by default)
+  # --------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: atlasrag-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      # Persist downloaded models
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - atlasrag-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # ------------ Uncomment below for GPU support (NVIDIA) -----------
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # --------------------------------------------------------------------------
+  # AtlasRAG API - FastAPI Application Server
+  # --------------------------------------------------------------------------
+  atlasrag-api:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      target: development
+    container_name: atlasrag-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot-reloading during development
+      - ./atlasrag:/app/atlasrag
+      - ./eval:/app/eval
+      # Mount environment file
+      - ./.env:/app/.env:ro
+    env_file:
+      - .env
+    environment:
+      # Override service hostnames for Docker network
+      DATABASE_URL: postgresql://atlasrag:atlasrag_dev_password@postgres:5432/atlasrag
+      OLLAMA_BASE_URL: http://ollama:11434
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - atlasrag-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # --------------------------------------------------------------------------
+  # Prometheus - Metrics Collection (Optional - Phase 10)
+  # --------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: atlasrag-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - atlasrag-network
+    profiles:
+      - observability
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --------------------------------------------------------------------------
+  # Grafana - Metrics Visualization (Optional - Phase 10)
+  # --------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: atlasrag-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./infra/docker/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./infra/docker/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./infra/docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel"
+    depends_on:
+      - prometheus
+    networks:
+      - atlasrag-network
+    profiles:
+      - observability
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ============================================================================
+# Networks - Isolated communication between containers
+# ============================================================================
+networks:
+  atlasrag-network:
+    driver: bridge
+    name: atlasrag-network
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ============================================================================
+# Volumes - Persistent data storage
+# ============================================================================
+volumes:
+  # PostgreSQL data
+  postgres_data:
+    name: atlasrag-postgres-data
+    driver: local
+  # Chroma embeddings and metadata
+  chroma_data:
+    name: atlasrag-chroma-data
+    driver: local
+  # Ollama models (can be large!)
+  ollama_data:
+    name: atlasrag-ollama-data
+    driver: local
+  # Prometheus time-series database
+  prometheus_data:
+    name: atlasrag-prometheus-data
+    driver: local
+  # Grafana configuration and dashboards
+  grafana_data:
+    name: atlasrag-grafana-data
+    driver: local
