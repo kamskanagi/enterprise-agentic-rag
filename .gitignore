@@ -78,7 +78,15 @@ temp/
 # OS specific
 Thumbs.db
 
+# Markdown files (except README.md)
+*.md
+!README.md
+!**/README.md
+
 # Project-specific
 CLAUDE.md
 docs/
 pyproject.toml
+.claude/
+CLAUDE.local.md
+*.claude*
