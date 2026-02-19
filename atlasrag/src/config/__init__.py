@@ -1,22 +1,55 @@
 """
 Configuration Module
 
-TODO: Phase 2 - Centralized settings management
+Centralized settings management using Pydantic v2 BaseSettings.
 
-This module will handle:
+This module handles:
 - Loading environment variables from .env file
-- Validating configuration on startup
-- Providing type-safe configuration objects (Pydantic Settings)
-- Supporting provider-specific settings (Ollama, OpenAI, Gemini)
+- Validating configuration with type safety
+- Providing domain-specific configuration objects
+- Supporting multiple LLM providers (Ollama, OpenAI, Gemini)
+- Supporting multiple vector stores (Chroma, Milvus)
 
-Key files to be implemented:
-- settings.py: Main settings loader
+Key components:
+- settings.py: Main Settings class + get_settings() singleton
 - llm_config.py: LLM provider configurations
 - vector_store_config.py: Vector database configurations
-- api_config.py: API server configurations
+- api_config.py: API server and database configurations
+- observability_config.py: Logging and tracing configurations
 
-Usage example (Phase 2+):
-    from src.config.settings import get_settings
+Usage:
+    from atlasrag.src.config import get_settings, LLMConfig
+
     settings = get_settings()
-    print(f"Using LLM provider: {settings.llm_provider}")
+    print(f"LLM provider: {settings.llm_provider}")
+
+    llm_config = settings.get_llm_config()
+    print(f"Using model: {llm_config.active_model}")
 """
+
+from .settings import Settings, get_settings
+from .llm_config import LLMConfig, OllamaConfig, OpenAIConfig, GeminiConfig
+from .vector_store_config import VectorStoreConfig, ChromaConfig, MilvusConfig
+from .api_config import APIConfig, CORSConfig, DatabaseConfig
+from .observability_config import ObservabilityConfig
+
+__all__ = [
+    # Main entry point
+    "Settings",
+    "get_settings",
+    # LLM Configs
+    "LLMConfig",
+    "OllamaConfig",
+    "OpenAIConfig",
+    "GeminiConfig",
+    # Vector Store Configs
+    "VectorStoreConfig",
+    "ChromaConfig",
+    "MilvusConfig",
+    # API Configs
+    "APIConfig",
+    "CORSConfig",
+    "DatabaseConfig",
+    # Observability Config
+    "ObservabilityConfig",
+]

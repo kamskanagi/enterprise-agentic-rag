@@ -25,27 +25,32 @@ os.environ.setdefault("LOG_LEVEL", "DEBUG")
 
 
 # ============================================================================
-# TODO: Phase 2 - Configuration Fixtures
+# Phase 2 - Configuration Fixtures
 # ============================================================================
-# These fixtures will be implemented when Phase 2 (Configuration) is done.
-#
-# @pytest.fixture
-# def test_settings():
-#     """Provide test-specific settings instead of .env values"""
-#     from src.config.settings import Settings
-#     return Settings(
-#         llm_provider="ollama",
-#         vector_store="chroma",
-#         database_url="postgresql://test:test@localhost/test"
-#     )
-#
-# @pytest.fixture(scope="session")
-# def test_database(test_settings):
-#     """Create test database and teardown after all tests"""
-#     # Create database
-#     # Yield for tests
-#     # Drop database
-#     pass
+
+@pytest.fixture
+def test_settings(monkeypatch):
+    """Provide test-specific settings with defaults.
+
+    Clears the lru_cache before and after to ensure each test gets fresh settings.
+    Uses monkeypatch to set environment variables without writing to .env file.
+    """
+    from atlasrag.src.config.settings import get_settings
+
+    # Clear cache before test
+    get_settings.cache_clear()
+
+    # Set default test environment variables
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("VECTOR_STORE", "chroma")
+    monkeypatch.setenv("DEBUG", "false")
+
+    # Yield the settings instance
+    settings = get_settings()
+    yield settings
+
+    # Clear cache after test
+    get_settings.cache_clear()
 
 
 # ============================================================================
