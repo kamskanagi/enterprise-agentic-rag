@@ -54,25 +54,52 @@ def test_settings(monkeypatch):
 
 
 # ============================================================================
-# TODO: Phase 3 - LLM Provider Fixtures
+# Phase 3 - LLM Provider Fixtures
 # ============================================================================
-# These fixtures will be implemented when Phase 3 (LLM) is done.
-#
-# @pytest.fixture
-# def mock_llm_provider():
-#     """Provide mock LLM provider for testing without API calls"""
-#     from unittest.mock import MagicMock
-#     mock = MagicMock()
-#     mock.generate.return_value = "Test response"
-#     mock.embed.return_value = [0.1, 0.2, 0.3]
-#     return mock
-#
-# @pytest.fixture
-# def llm_client(mock_llm_provider):
-#     """Provide LLM client with mocked provider"""
-#     from src.llm.factory import get_llm_client
-#     # Patch the factory to return mock
-#     pass
+
+
+@pytest.fixture
+def mock_llm_provider():
+    """Provide mock LLM provider for testing without API calls.
+
+    Returns a MagicMock that behaves like a BaseLLMProvider.
+    """
+    from unittest.mock import MagicMock
+    from atlasrag.src.llm import LLMResponse, EmbeddingResponse
+
+    mock = MagicMock()
+    mock.generate.return_value = LLMResponse(
+        content="Mock response",
+        tokens_used=10,
+        model="mock-model",
+        provider="mock",
+    )
+    mock.embed.return_value = EmbeddingResponse(
+        embedding=[0.1, 0.2, 0.3],
+        dimensions=3,
+        model="mock-embedding-model",
+        provider="mock",
+    )
+    mock.is_available.return_value = True
+    return mock
+
+
+@pytest.fixture
+def llm_client(monkeypatch, mock_llm_provider):
+    """Provide LLM client with mocked provider.
+
+    Clears the factory cache and patches get_llm_client to return mock.
+    Useful for testing code that uses LLM without making actual API calls.
+    """
+    from atlasrag.src.llm.factory import get_llm_client
+
+    get_llm_client.cache_clear()
+    monkeypatch.setattr(
+        "atlasrag.src.llm.factory.get_llm_client",
+        lambda: mock_llm_provider,
+    )
+    yield mock_llm_provider
+    get_llm_client.cache_clear()
 
 
 # ============================================================================
