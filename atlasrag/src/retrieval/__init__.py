@@ -1,37 +1,83 @@
-"""
-Retrieval Module
+"""Vector Store Abstraction Layer
 
-TODO: Phase 4 - Vector database operations for semantic search
+Unified interface for multiple vector database backends with automatic
+backend selection based on environment configuration.
 
-Supported Vector Stores:
-- Chroma: Local, file-based, default for development
-- Milvus: Scalable, production-ready, optional for enterprise
+Supported backends:
+- Chroma: Local, file-based storage (development default)
+- Milvus: Scalable, distributed storage (production option)
 
 Key Operations:
-- Store document embeddings and metadata
-- Similarity search (retrieve top-k relevant chunks)
-- Metadata filtering and hybrid search
-- Index management and optimization
+- Store document embeddings with metadata
+- Similarity search to retrieve top-k relevant documents
+- Document management (add, delete, clear)
+- Backend health checks
 
-Key files to be implemented:
-- base.py: Abstract vector store interface
-- chroma_store.py: ChromaDB implementation
-- milvus_store.py: Milvus implementation
-- factory.py: Vector store selection factory
+Usage:
+    from atlasrag.src.retrieval import get_vector_store
 
-Usage example (Phase 4+):
-    from src.retrieval.factory import get_vector_store
     vector_store = get_vector_store()
 
     # Store embeddings
-    vector_store.add_documents(chunks, embeddings, metadata)
+    response = vector_store.add_documents(chunks, embeddings, metadata)
 
-    # Semantic search
+    # Similarity search
     results = vector_store.similarity_search(query_embedding, top_k=5)
 
-Architecture:
-- Documents are split into chunks with metadata (source, page, etc.)
-- Each chunk is converted to an embedding (vector of numbers)
-- Similar embeddings are stored close together in vector space
-- Semantic search finds nearby embeddings for a query
+    # Delete documents
+    delete_resp = vector_store.delete_documents(doc_ids)
+
+    # Health check
+    if vector_store.is_available():
+        print("Vector store is ready")
+
+Configuration:
+    Set VECTOR_STORE environment variable to choose:
+    - "chroma": Local Chroma backend (default)
+    - "milvus": Milvus backend
+
+Design Pattern:
+    Factory pattern with @lru_cache() singleton. All backends implement
+    the BaseVectorStore interface, enabling seamless backend switching
+    without code changes.
 """
+
+from .factory import get_vector_store
+from .base import BaseVectorStore
+from .chroma_store import ChromaVectorStore
+from .milvus_store import MilvusVectorStore
+from .models import (
+    SearchResult,
+    SearchResults,
+    DocumentMetadata,
+    StorageResponse,
+    DeleteResponse,
+)
+from .exceptions import (
+    VectorStoreException,
+    VectorStoreUnavailableError,
+    DocumentNotFoundError,
+    SearchError,
+    StorageError,
+    DeletionError,
+    QueryError,
+)
+
+__all__ = [
+    "get_vector_store",
+    "BaseVectorStore",
+    "ChromaVectorStore",
+    "MilvusVectorStore",
+    "SearchResult",
+    "SearchResults",
+    "DocumentMetadata",
+    "StorageResponse",
+    "DeleteResponse",
+    "VectorStoreException",
+    "VectorStoreUnavailableError",
+    "DocumentNotFoundError",
+    "SearchError",
+    "StorageError",
+    "DeletionError",
+    "QueryError",
+]

@@ -103,26 +103,57 @@ def llm_client(monkeypatch, mock_llm_provider):
 
 
 # ============================================================================
-# TODO: Phase 4 - Vector Store Fixtures
+# Phase 4 - Vector Store Fixtures
 # ============================================================================
-# These fixtures will be implemented when Phase 4 (Retrieval) is done.
-#
-# @pytest.fixture
-# def test_vector_store(tmp_path):
-#     """Provide in-memory vector store for testing"""
-#     from src.retrieval.chroma_store import ChromaVectorStore
-#     # Use temp directory for Chroma
-#     return ChromaVectorStore(persist_directory=str(tmp_path))
-#
-# @pytest.fixture
-# def vector_store_with_data(test_vector_store):
-#     """Vector store pre-populated with test data"""
-#     test_vector_store.add(
-#         texts=["Test document 1", "Test document 2"],
-#         embeddings=[[0.1, 0.2], [0.15, 0.25]],
-#         metadata=[{"source": "test1"}, {"source": "test2"}]
-#     )
-#     return test_vector_store
+
+
+@pytest.fixture
+def mock_vector_store():
+    """Provide mock vector store for testing without backend.
+
+    Returns a MagicMock that behaves like a BaseVectorStore.
+    """
+    from unittest.mock import MagicMock
+    from atlasrag.src.retrieval import SearchResults, StorageResponse, DeleteResponse
+
+    mock = MagicMock()
+    mock.add_documents.return_value = StorageResponse(
+        document_count=2,
+        vector_store="mock",
+        status="success",
+    )
+    mock.similarity_search.return_value = SearchResults(
+        query=None,
+        results=[],
+        total_results=0,
+        vector_store="mock",
+    )
+    mock.delete_documents.return_value = DeleteResponse(
+        deleted_count=1,
+        vector_store="mock",
+        status="success",
+    )
+    mock.is_available.return_value = True
+    mock.get_document_count.return_value = 2
+    return mock
+
+
+@pytest.fixture
+def vector_store(monkeypatch, mock_vector_store):
+    """Provide vector store with mocked backend.
+
+    Clears the factory cache and patches get_vector_store to return mock.
+    Useful for testing code that uses vector store without backend.
+    """
+    from atlasrag.src.retrieval.factory import get_vector_store
+
+    get_vector_store.cache_clear()
+    monkeypatch.setattr(
+        "atlasrag.src.retrieval.factory.get_vector_store",
+        lambda: mock_vector_store,
+    )
+    yield mock_vector_store
+    get_vector_store.cache_clear()
 
 
 # ============================================================================
