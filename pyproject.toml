@@ -1,0 +1,241 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atlasrag"
+version = "0.1.0"
+description = "Enterprise Agentic RAG Platform with Multi-Provider LLM Support"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+keywords = ["rag", "retrieval-augmented-generation", "langchain", "langgraph", "ai", "llm", "vector-database"]
+authors = [
+    {name = "AtlasRAG Team", email = "team@atlasrag.dev"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Internet :: WWW/HTTP :: Servers",
+]
+
+dependencies = [
+    # Web Framework & Server
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.28.0",
+
+    # AI/LLM Core
+    "langchain>=0.3.0",
+    "langchain-community>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langgraph>=0.2.60",
+    "openai>=1.59.0",
+    "google-generativeai>=0.8.0",
+    "ollama>=0.4.7",
+
+    # Vector Databases
+    "chromadb>=0.5.0",
+    "pymilvus>=2.5.0",
+
+    # Document Processing
+    "pypdf>=5.1.0",
+    "python-docx>=1.1.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.3.0",
+    "unstructured>=0.16.0",
+    "pillow>=10.0.0",
+
+    # Database & ORM
+    "psycopg2-binary>=2.9.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.15.0",
+
+    # Observability & Monitoring
+    "opentelemetry-api>=1.28.0",
+    "opentelemetry-sdk>=1.28.0",
+    "opentelemetry-instrumentation-fastapi>=0.49b0",
+    "opentelemetry-exporter-otlp>=0.49b0",
+    "prometheus-client>=0.21.0",
+
+    # Evaluation
+    "ragas>=0.2.0",
+    "datasets>=3.2.0",
+
+    # Utilities
+    "tenacity>=9.0.0",
+    "tiktoken>=0.8.0",
+    "pyyaml>=6.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "pytest-xdist>=3.7.0",
+
+    # Code Quality & Linting
+    "black>=24.10.0",
+    "ruff>=0.8.0",
+    "mypy>=1.14.0",
+    "pre-commit>=4.0.0",
+
+    # Type Stubs
+    "types-requests>=2.32.0",
+    "types-beautifulsoup4>=4.12.0",
+    "types-pyyaml>=6.0.0",
+
+    # Development Utilities
+    "ipython>=8.20.0",
+    "rich>=13.7.0",
+    "python-dotenv>=1.0.0",
+]
+
+milvus = ["pymilvus>=2.5.0"]
+all = ["atlasrag[dev,milvus]"]
+
+[project.scripts]
+atlasrag-api = "src.api.main:run"
+atlasrag-ingest = "scripts.ingest_documents:main"
+atlasrag-evaluate = "scripts.evaluate:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/atlasrag"
+Documentation = "https://github.com/yourusername/atlasrag/blob/main/README.md"
+Repository = "https://github.com/yourusername/atlasrag"
+Issues = "https://github.com/yourusername/atlasrag/issues"
+
+[tool.setuptools]
+package-dir = {"" = "atlasrag"}
+
+[tool.setuptools.packages.find]
+where = ["atlasrag"]
+include = ["src*", "scripts*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+testpaths = ["atlasrag/tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+asyncio_mode = "auto"
+addopts = "-v --cov=atlasrag/src --cov-report=term-missing --cov-report=html -ra"
+markers = [
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow",
+    "unit: marks tests as unit tests",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312", "py313"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | env
+  | \.tox
+  | build
+  | dist
+  | \.eggs
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "env",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "ARG",  # flake8-unused-arguments
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by black)
+    "B008",   # do not perform function calls in argument defaults
+    "B904",   # raise-without-from in except block
+    "ARG001", # unused positional argument
+    "ARG002", # unused positional argument
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["atlasrag", "src", "scripts"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "chromadb.*",
+    "ollama.*",
+    "ragas.*",
+    "unstructured.*",
+    "pymilvus.*",
+    "opentelemetry.*",
+    "prometheus_client.*",
+]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["atlasrag/src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "pass",
+]

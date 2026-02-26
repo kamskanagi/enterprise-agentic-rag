@@ -178,22 +178,37 @@ def vector_store(monkeypatch, mock_vector_store):
 
 
 # ============================================================================
-# TODO: Phase 9 - FastAPI Test Client Fixture
+# Phase 9 - FastAPI Test Client Fixture
 # ============================================================================
-# These fixtures will be implemented when Phase 9 (API) is done.
-#
-# @pytest.fixture
-# def test_client():
-#     """Provide FastAPI test client"""
-#     from fastapi.testclient import TestClient
-#     from src.api.main import app
-#     return TestClient(app)
-#
-# @pytest.fixture
-# def authenticated_client(test_client):
-#     """Test client with authentication headers"""
-#     # Add API key header
-#     pass
+
+
+@pytest.fixture
+def test_app():
+    """Create a fresh FastAPI app for testing.
+
+    Clears dependency caches before and after to ensure isolation.
+    """
+    from atlasrag.src.api.dependencies import get_agent_graph, get_ingestion_pipeline
+    from atlasrag.src.api.main import create_app
+
+    get_agent_graph.cache_clear()
+    get_ingestion_pipeline.cache_clear()
+    get_settings.cache_clear()
+
+    app = create_app()
+    yield app
+
+    get_agent_graph.cache_clear()
+    get_ingestion_pipeline.cache_clear()
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def test_client(test_app):
+    """Provide FastAPI TestClient wrapping the test app."""
+    from fastapi.testclient import TestClient
+
+    return TestClient(test_app)
 
 
 # ============================================================================
