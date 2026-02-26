@@ -37,8 +37,15 @@ def retriever_node(state: AgentState, llm=None, vector_store=None) -> dict:
     # Track repair iterations — if context already exists, this is a repair pass
     existing_context = state.get("context", [])
     repair_iterations = state.get("repair_iterations", 0)
-    if existing_context:
+    is_repair = bool(existing_context)
+    if is_repair:
         repair_iterations += 1
+
+    # On repair, increase top_k by 1.5x to fetch more diverse sources (capped at 20)
+    top_k = settings.retrieval_top_k
+    if is_repair:
+        top_k = min(int(top_k * 1.5), 20)
+        logger.info("Repair pass: increased top_k from %d to %d", settings.retrieval_top_k, top_k)
 
     seen_contents: set = set()
     all_chunks: List[Dict] = []
@@ -47,7 +54,7 @@ def retriever_node(state: AgentState, llm=None, vector_store=None) -> dict:
         embedding_response = llm.embed(sub_query)
         search_results = vector_store.similarity_search(
             query_embedding=embedding_response.embedding,
-            top_k=settings.retrieval_top_k,
+            top_k=top_k,
             similarity_threshold=settings.similarity_threshold,
         )
 

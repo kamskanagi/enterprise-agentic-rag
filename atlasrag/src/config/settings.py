@@ -149,6 +149,8 @@ class Settings(BaseSettings):
     max_repair_iterations: int = 3
     min_citation_coverage: float = 0.8
     verification_mode: Literal["strict", "lenient", "disabled"] = "strict"
+    enable_contradiction_detection: bool = True
+    paragraph_citation_required: bool = True
 
     # =========================================================================
     # Observability Configuration

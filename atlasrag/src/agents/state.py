@@ -20,6 +20,9 @@ class AgentState(TypedDict, total=False):
         confidence: Verification confidence score (0.0-1.0).
         verification_passed: Whether the answer passed verification.
         repair_iterations: Number of repair loop iterations completed.
+        verification_issues: Granular issue reports from enhanced verification.
+            Each dict has keys: type, message, severity.
+        unsupported_claims: Sentences/claims without citation support.
         model: LLM model name used for generation.
         provider: LLM provider name used for generation.
     """
@@ -32,5 +35,7 @@ class AgentState(TypedDict, total=False):
     confidence: float
     verification_passed: bool
     repair_iterations: int
+    verification_issues: List[Dict]
+    unsupported_claims: List[str]
     model: str
     provider: str
