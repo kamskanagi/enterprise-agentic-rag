@@ -12,9 +12,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from atlasrag.src.api.middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware
+from atlasrag.src.api.middleware import (
+    ErrorHandlingMiddleware,
+    MetricsMiddleware,
+    RequestLoggingMiddleware,
+)
 from atlasrag.src.api.routes import health, ingest, query, status
 from atlasrag.src.config import get_settings
+from atlasrag.src.observability.logging import setup_logging
+from atlasrag.src.observability.metrics import get_metrics_app
+from atlasrag.src.observability.tracing import setup_tracing
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +30,11 @@ def create_app() -> FastAPI:
     """Build and return the FastAPI application."""
     settings = get_settings()
     api_config = settings.get_api_config()
+    obs_config = settings.get_observability_config()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        setup_logging(obs_config)
         logger.info(
             "AtlasRAG API starting on %s:%s", api_config.host, api_config.port
         )
@@ -39,8 +48,17 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # --- Tracing (if enabled) ---
+    setup_tracing(app, obs_config)
+
+    # --- Metrics endpoint ---
+    if obs_config.enable_metrics:
+        app.mount("/metrics", get_metrics_app())
+
     # --- Middleware (order matters: outermost first) ---
     app.add_middleware(RequestLoggingMiddleware)
+    if obs_config.enable_metrics:
+        app.add_middleware(MetricsMiddleware)
     app.add_middleware(ErrorHandlingMiddleware)
     app.add_middleware(
         CORSMiddleware,

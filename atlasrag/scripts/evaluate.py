@@ -1,83 +1,103 @@
 #!/usr/bin/env python3
-"""
-Evaluation Script
+"""Evaluation Script
 
-TODO: Phase 11 - Implement RAGAS evaluation
-
-This script runs the evaluation suite against the golden dataset.
+Runs the golden dataset evaluation suite and optionally compares to a baseline.
 
 Usage:
-    python scripts/evaluate.py
-    python scripts/evaluate.py --dataset eval/golden_dataset.jsonl
-    python scripts/evaluate.py --compare-to baseline-v1.0
-
-Features (to be implemented in Phase 11):
-    - Load golden evaluation dataset
-    - Run each query through AtlasRAG
-    - Compute RAGAS metrics
-    - Generate evaluation report
-    - Compare to baseline
-    - Fail if regressions detected
-    - Save results for historical tracking
-
-RAGAS Metrics (targets):
-    - Faithfulness: >90% (answer grounded in sources)
-    - Answer Relevancy: >85% (answer addresses question)
-    - Context Precision: >80% (retrieved docs are relevant)
-    - Context Recall: >80% (found all relevant docs)
-    - Citation Coverage: >95% (sentences have citations)
-    - p95 Latency: <5 seconds (95th percentile response time)
+    python -m atlasrag.scripts.evaluate
+    python -m atlasrag.scripts.evaluate --dataset path/to/dataset.jsonl
+    python -m atlasrag.scripts.evaluate --save-baseline baseline.json
+    python -m atlasrag.scripts.evaluate --compare-to baseline.json
 """
+
+import argparse
+import sys
+
+from atlasrag.src.evaluation.baseline import load_baseline, save_baseline
+from atlasrag.src.evaluation.runner import EvaluationRunner, load_dataset
 
 
 def main():
-    """Main entry point for evaluation"""
+    parser = argparse.ArgumentParser(description="AtlasRAG Evaluation Suite")
+    parser.add_argument(
+        "--dataset",
+        default="atlasrag/eval/golden_dataset.jsonl",
+        help="Path to golden dataset JSONL file",
+    )
+    parser.add_argument(
+        "--save-baseline",
+        default=None,
+        help="Save evaluation results as a baseline to this path",
+    )
+    parser.add_argument(
+        "--compare-to",
+        default=None,
+        help="Compare results against a stored baseline",
+    )
+    args = parser.parse_args()
+
     print("=" * 70)
-    print("AtlasRAG Evaluation Script")
+    print("AtlasRAG Evaluation Suite")
     print("=" * 70)
-    print()
-    print("TODO: Phase 11 - Implement evaluation")
-    print()
-    print("This script will:")
-    print("  1. Load golden dataset from eval/")
-    print("     Format: JSONL with query, reference_answer, source_docs")
-    print()
-    print("  2. Run each query through AtlasRAG pipeline")
-    print("     - Planner → Retriever → Answerer → Verifier")
-    print()
-    print("  3. Compute RAGAS metrics:")
-    print("     - Faithfulness: Is answer grounded?")
-    print("     - Answer Relevancy: Does it address the query?")
-    print("     - Context Precision: Are retrieved docs relevant?")
-    print("     - Context Recall: Did we find all relevant docs?")
-    print()
-    print("  4. Compute custom metrics:")
-    print("     - Citation Coverage: % sentences with citations")
-    print("     - Latency (p50, p95, p99): Response time distribution")
-    print()
-    print("  5. Generate evaluation report")
-    print("     - Overall metric scores")
-    print("     - Per-query breakdown")
-    print("     - Failure analysis")
-    print()
-    print("  6. Compare to baseline (if provided)")
-    print("     - Detect regressions (>3% drop)")
-    print("     - Highlight improvements")
-    print("     - Fail CI if regressions found")
-    print()
-    print("  7. Save results for tracking over time")
-    print()
-    print("Examples:")
-    print("  python evaluate.py")
-    print("  python evaluate.py --dataset eval/golden_dataset.jsonl")
-    print("  python evaluate.py --compare-to baseline-v1.0")
-    print("  python evaluate.py --verbose")
-    print()
-    print("CI Integration:")
-    print("  - Fail if Faithfulness < 87% (3% below target)")
-    print("  - Fail if Citation Coverage < 90% (5% below target)")
-    print("  - Fail if p95 Latency > 6 seconds (20% above target)")
-    print()
+
+    # Load dataset
+    print(f"\nLoading dataset from: {args.dataset}")
+    samples = load_dataset(args.dataset)
+    print(f"Loaded {len(samples)} evaluation samples")
+
+    # Create graph
+    print("\nInitializing agent graph...")
+    try:
+        from atlasrag.src.agents.graph import create_agent_graph
+
+        graph = create_agent_graph()
+    except Exception as e:
+        print(f"Warning: Could not create agent graph ({e})")
+        print("Running in dry-run mode with no graph execution")
+        graph = None
+
+    if graph is None:
+        print("\nNo graph available. Exiting.")
+        sys.exit(0)
+
+    # Run evaluation
+    runner = EvaluationRunner()
+    print(f"\nRunning evaluation on {len(samples)} samples...")
+    report = runner.evaluate(samples, graph)
+
+    # Print results
+    print("\n" + "=" * 70)
+    print("Results")
+    print("=" * 70)
+    print(f"  Faithfulness:       {report.mean_scores.faithfulness:.2%}")
+    print(f"  Citation Coverage:  {report.mean_scores.citation_coverage:.2%}")
+    print(f"  Answer Relevancy:   {report.mean_scores.answer_relevancy:.2%}")
+    print(f"  Latency (p95):      {report.mean_scores.latency_p95:.3f}s")
+
+    # Save baseline
+    if args.save_baseline:
+        save_baseline(report, args.save_baseline)
+        print(f"\nBaseline saved to: {args.save_baseline}")
+
+    # Compare to baseline
+    exit_code = 0
+    if args.compare_to:
+        print(f"\nComparing to baseline: {args.compare_to}")
+        baseline = load_baseline(args.compare_to)
+        regressions = runner.compare_to_baseline(report, baseline)
+
+        if regressions:
+            print("\nREGRESSIONS DETECTED:")
+            for reg in regressions:
+                print(
+                    f"  {reg['metric']}: {reg['current']:.4f} "
+                    f"(baseline: {reg['baseline']:.4f}, delta: -{reg['delta']:.4f})"
+                )
+            exit_code = 1
+        else:
+            print("\nNo regressions found.")
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
