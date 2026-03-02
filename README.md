@@ -1,174 +1,225 @@
-# AtlasRAG - Enterprise Agentic RAG Platform
+# AtlasRAG
 
-Production-grade Retrieval-Augmented Generation (RAG) system with grounded, fact-checked answers.
+Production-grade Enterprise Agentic RAG platform. Ask questions about company documents and get grounded, citation-backed answers.
 
-## 🚀 Quick Start - Phase 0: Setup & Understanding
+## Features
 
-**New to this project?** Start here! Phase 0 takes about 20-30 minutes.
+- **Agentic RAG** — Multi-agent pipeline (Planner, Retriever, Answerer, Verifier) orchestrated with LangGraph
+- **Citation-backed answers** — Every claim is traced to source documents
+- **Verification loop** — Automatic fact-checking with repair when citations are missing
+- **Provider flexibility** — Switch between Ollama (local/offline), OpenAI, or Gemini with one config change
+- **Production-ready** — Docker Compose for local dev, Kubernetes manifests for production
+- **Observability** — OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
+- **Quality gates** — RAGAS-based evaluation suite with CI/CD quality thresholds
 
-### Step 1: Verify Prerequisites
+## Architecture
 
-```bash
-python3 verify_prerequisites.py
+```mermaid
+graph TB
+    Client[Client] -->|HTTP| API[FastAPI Server]
+    API --> Graph[LangGraph Agent Graph]
+    Graph --> Planner[Planner Agent]
+    Planner --> Retriever[Retriever Agent]
+    Retriever --> VectorDB[(Vector Store<br/>Chroma / Milvus)]
+    Retriever --> Answerer[Answerer Agent]
+    Answerer --> LLM[LLM Provider<br/>Ollama / OpenAI / Gemini]
+    Answerer --> Verifier[Verifier Agent]
+    Verifier -->|Repair Loop| Answerer
+    Verifier --> API
+    API --> Metrics[Prometheus /metrics]
+
+    subgraph Ingestion
+        Docs[Documents] --> Loader[Loader]
+        Loader --> Cleaner[Cleaner]
+        Cleaner --> Chunker[Chunker]
+        Chunker --> Embedder[Embedder]
+        Embedder --> VectorDB
+    end
 ```
 
-This script checks if you have:
-- ✅ Python 3.11+
-- ✅ Docker
-- ✅ Ollama
+## Quick Start
 
-If anything is missing, the script will provide platform-specific installation instructions.
+### Prerequisites
 
-### Step 2: Read the Documentation
+- Python 3.11+
+- Docker & Docker Compose
+- Ollama (`brew install ollama` or [ollama.com](https://ollama.com))
 
-1. **Concepts** - Understand the core technologies:
-   ```bash
-   cat docs/CONCEPTS.md
-   ```
-   Learn about Docker, Ollama, FastAPI, and Vector Databases in simple terms.
-
-2. **Installation** - Install missing prerequisites:
-   ```bash
-   cat docs/INSTALLATION.md
-   ```
-   Platform-specific guides for macOS, Linux, and Windows.
-
-3. **Phase 0 Checklist** - Complete the setup:
-   ```bash
-   cat docs/PHASE_0_CHECKLIST.md
-   ```
-   Actionable checklist with verification steps and reflection questions.
-
-### Step 3: Test Your Environment
+### 1. Start services
 
 ```bash
-# Test Docker
-docker run hello-world
-
-# Pull first Ollama model (takes a few minutes)
+# Pull an Ollama model
 ollama pull llama2
 
-# List installed models
-ollama list
+# Start the stack (API, Chroma, Postgres, Ollama)
+docker compose up -d
 ```
 
-## 📋 Project Status
-
-| Phase | Status | Deliverables |
-|-------|--------|---|
-| **Phase 0** 🟢 | Starting | Prerequisites verification, concepts docs, installation guide |
-| Phase 1 | Next | Project structure (atlasrag/src/, infra/, tests/) |
-| Phase 2-3 | Planned | Configuration system, LLM abstraction layer |
-| Phase 4-6 | Planned | Vector store, document ingestion, basic RAG |
-| Phase 7-9 | Planned | LangGraph agents, verification loop, FastAPI API |
-| Phase 10-15 | Planned | Observability, evaluation, Docker, Kubernetes, polish |
-
-See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for detailed roadmap.
-
-## 🎯 What is AtlasRAG?
-
-AtlasRAG enables organizations to ask questions about company documents with:
-
-- **Grounded answers**: Every claim backed by source documents
-- **Citations**: Know exactly where information came from
-- **Verification**: Automatic fact-checking and repair loops
-- **Flexibility**: Switch between Ollama (local), OpenAI, or Gemini with one config change
-- **Privacy**: Works offline or on-premises using Ollama
-- **Enterprise-ready**: Production deployment on Kubernetes
-
-### Example
-
-```
-User: "What's our vacation policy?"
-
-AtlasRAG: "Your company provides 20 days of vacation annually
-(HR Policy, p. 3). Additional unpaid leave may be requested
-(Benefits Guide, p. 5). Confidence: 94%"
-```
-
-## 🏗️ Architecture
-
-```
-FastAPI Server (Question Handler)
-    ↓
-LangGraph Agents (Planner, Retriever, Answerer, Verifier)
-    ↓
-Ollama LLM (Answer Generation)
-Vector Database (Document Search)
-    ↓
-Response with Citations
-```
-
-## 🛠️ Tech Stack
-
-- **Framework**: FastAPI (HTTP API)
-- **Orchestration**: LangGraph (multi-agent coordination)
-- **LLM Runtime**: Ollama (local) + OpenAI/Gemini (cloud)
-- **Vector DB**: Chroma (dev) + Milvus (production)
-- **Deployment**: Docker + Kubernetes
-- **Observability**: OpenTelemetry + Prometheus
-
-## 📚 Documentation
-
-- [CLAUDE.md](CLAUDE.md) - Guidance for Claude Code
-- [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) - Complete 15-phase roadmap
-- [docs/CONCEPTS.md](docs/CONCEPTS.md) - Core technology concepts
-- [docs/INSTALLATION.md](docs/INSTALLATION.md) - Installation guide
-- [docs/PHASE_0_CHECKLIST.md](docs/PHASE_0_CHECKLIST.md) - Phase 0 completion checklist
-
-## 🤔 Common Questions
-
-**Q: Do I need to install everything to get started?**
-A: Only Python 3.11+, Docker, and Ollama are required. The verification script will help you.
-
-**Q: Can I use this offline?**
-A: Yes! Phase 0 and beyond use Ollama by default, which runs completely offline.
-
-**Q: Do I have enough disk space?**
-A: Ollama models are ~4GB each. One model is fine for development.
-
-**Q: When should I switch to OpenAI/Gemini?**
-A: You can demo everything with Ollama first, then switch to cloud providers in production.
-
-## 🎓 Learning Path
-
-1. **Phase 0** ← You are here
-   - Understand the tools
-   - Set up your environment
-   - Estimated time: 20-30 minutes
-
-2. **Phase 1** (Next)
-   - Create project structure
-   - Set up Python dependencies
-   - Create docker-compose.yml
-
-3. **Phases 2-15**
-   - Build the RAG system incrementally
-   - Add agents, verification, APIs, deployment
-
-Each phase builds on the previous one. No magic black boxes—understand everything!
-
-## 🚀 Ready to Begin?
-
-Make sure you've completed Phase 0:
+### 2. Ingest sample documents
 
 ```bash
-# Run the verification script
-python3 verify_prerequisites.py
-
-# You should see: ✓ All prerequisites verified!
+pip install -e .
+python -m atlasrag.scripts.ingest_documents data/samples/
 ```
 
-If you see green checkmarks, you're ready to proceed to Phase 1.
+### 3. Query the API
 
-## 📖 Philosophy
+```bash
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is the vacation policy?"}'
+```
 
-> **"Build step-by-step, understand everything, no magic black boxes."**
+## API Usage
 
-This project teaches you how RAG systems work by building one from scratch. Every component has a purpose. Every phase builds understanding.
+### Query documents
 
----
+```bash
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "How do I report a security incident?"}'
+```
 
-**Status**: Phase 0 - Setup & Understanding
-**Current Activity**: Installing prerequisites and understanding core concepts
-**Next Phase**: Phase 1 - Project Skeleton
+### Ingest a document
+
+```bash
+curl -X POST http://localhost:8000/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"file_path": "/data/samples/hr-handbook.txt"}'
+```
+
+### Health check
+
+```bash
+curl http://localhost:8000/health
+```
+
+### Prometheus metrics
+
+```bash
+curl http://localhost:8000/metrics
+```
+
+## Configuration
+
+Key environment variables (see `.env.example` for all options):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LLM_PROVIDER` | `ollama` | LLM backend: `ollama`, `openai`, or `gemini` |
+| `OLLAMA_MODEL` | `llama2` | Model name for Ollama |
+| `OPENAI_API_KEY` | — | API key for OpenAI provider |
+| `GEMINI_API_KEY` | — | API key for Gemini provider |
+| `VECTOR_STORE` | `chroma` | Vector DB: `chroma` or `milvus` |
+| `API_PORT` | `8000` | API server port |
+| `LOG_LEVEL` | `INFO` | Logging level |
+| `ENABLE_METRICS` | `true` | Expose Prometheus metrics |
+
+## Development
+
+### Install
+
+```bash
+pip install -e ".[dev]"
+```
+
+### Run tests
+
+```bash
+pytest atlasrag/tests/ -v
+pytest atlasrag/tests/ --cov=atlasrag/src   # with coverage
+```
+
+### Lint and format
+
+```bash
+black atlasrag/
+ruff check atlasrag/
+mypy atlasrag/src/
+```
+
+### Run the API locally
+
+```bash
+python -m atlasrag.src.api.main
+```
+
+## Deployment
+
+### Docker Compose (local / staging)
+
+```bash
+docker compose up -d                              # core services
+docker compose --profile observability up -d       # with Prometheus + Grafana
+```
+
+### Kubernetes (production)
+
+```bash
+# Validate manifests
+kubectl apply --dry-run=client -f infra/k8s/
+
+# Deploy
+kubectl apply -f infra/k8s/namespace.yml
+kubectl apply -f infra/k8s/
+```
+
+Manifests include: Deployment (2 replicas), Service, HPA (auto-scale 2-10 pods at 70% CPU), Ingress with TLS, and Prometheus ServiceMonitor.
+
+## Project Structure
+
+```
+atlasrag/
+├── src/
+│   ├── api/           # FastAPI server and routes
+│   ├── agents/        # LangGraph agents (Planner, Retriever, Answerer, Verifier)
+│   ├── config/        # Settings and environment loading
+│   ├── ingestion/     # Document pipeline (load → clean → chunk → embed → store)
+│   ├── retrieval/     # Vector store abstraction (Chroma, Milvus)
+│   ├── llm/           # LLM provider abstraction (Ollama, OpenAI, Gemini)
+│   ├── rag/           # RAG pipeline and prompts
+│   ├── evaluation/    # RAGAS metrics and quality gates
+│   └── observability/ # Logging, metrics, tracing
+├── scripts/           # CLI tools (ingest, evaluate, health check)
+├── eval/              # Golden evaluation dataset
+└── tests/             # Unit and integration tests
+infra/
+├── docker/            # Dockerfile, Postgres init, Prometheus/Grafana configs
+└── k8s/               # Kubernetes manifests
+data/
+└── samples/           # Sample documents for demo
+```
+
+## Project Status
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 0 | Prerequisites & Setup | Done |
+| 1 | Project Skeleton | Done |
+| 2-3 | Configuration & LLM Providers | Done |
+| 4-5 | Vector Store & Document Ingestion | Done |
+| 6 | Basic RAG Pipeline | Done |
+| 7 | LangGraph Agent Architecture | Done |
+| 8 | Verification & Repair Loop | Done |
+| 9 | FastAPI Server | Done |
+| 10 | Observability (Logging, Metrics, Tracing) | Done |
+| 11 | Evaluation Suite (RAGAS) | Done |
+| 12 | CI/CD Quality Gates | Done |
+| 13 | Docker & Local Demo | Done |
+| 14 | Kubernetes Manifests | Done |
+| 15 | Documentation & Polish | Done |
+
+## Tech Stack
+
+- **API**: FastAPI, Uvicorn
+- **Agents**: LangGraph
+- **LLM**: Ollama, OpenAI, Google Gemini
+- **Vector DB**: ChromaDB (dev), Milvus (production)
+- **Database**: PostgreSQL
+- **Observability**: OpenTelemetry, Prometheus, Grafana
+- **Evaluation**: RAGAS
+- **Infrastructure**: Docker, Kubernetes
+
+## License
+
+See [LICENSE](LICENSE) for details.

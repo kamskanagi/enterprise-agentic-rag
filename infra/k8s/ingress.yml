@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atlasrag-api
+  namespace: atlasrag
+  labels:
+    app.kubernetes.io/name: atlasrag
+    app.kubernetes.io/component: api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - atlasrag.example.com
+      secretName: atlasrag-tls
+  rules:
+    - host: atlasrag.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: atlasrag-api
+                port:
+                  number: 8000

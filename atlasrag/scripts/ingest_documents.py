@@ -1,57 +1,128 @@
 #!/usr/bin/env python3
-"""
-Document Ingestion Script
+"""Document Ingestion Script
 
-TODO: Phase 5 - Implement document ingestion CLI
-
-This script allows bulk ingestion of documents from a directory into the vector database.
+Ingest documents from a file or directory into the AtlasRAG vector database.
 
 Usage:
-    python scripts/ingest_documents.py /path/to/documents/
-    python scripts/ingest_documents.py /path/to/documents/ --recursive
-    python scripts/ingest_documents.py /path/to/file.pdf
-
-Features (to be implemented in Phase 5):
-    - Process single file or directory
-    - Recursive directory traversal
-    - Progress bar and status updates
-    - Error handling and retry logic
-    - Metadata extraction
-    - Duplicate detection
-    - Parallel processing
-
-Example with metadata:
-    python scripts/ingest_documents.py /docs --metadata '{"department": "HR"}'
+    python -m atlasrag.scripts.ingest_documents /path/to/documents/
+    python -m atlasrag.scripts.ingest_documents /path/to/file.txt
+    python -m atlasrag.scripts.ingest_documents /path/to/docs/ --recursive
 """
+
+import argparse
+import sys
+import os
+import time
+from pathlib import Path
+
+SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx", ".html"}
+
+
+def discover_files(path: str, recursive: bool = False) -> list[Path]:
+    """Discover supported document files at the given path.
+
+    Args:
+        path: File or directory path.
+        recursive: Whether to search subdirectories.
+
+    Returns:
+        Sorted list of file paths with supported extensions.
+    """
+    target = Path(path)
+
+    if target.is_file():
+        if target.suffix.lower() in SUPPORTED_EXTENSIONS:
+            return [target]
+        print(f"Unsupported file type: {target.suffix}")
+        print(f"Supported types: {', '.join(sorted(SUPPORTED_EXTENSIONS))}")
+        sys.exit(1)
+
+    if not target.is_dir():
+        print(f"Path not found: {path}")
+        sys.exit(1)
+
+    pattern = "**/*" if recursive else "*"
+    files = sorted(
+        f
+        for f in target.glob(pattern)
+        if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
+    )
+
+    return files
 
 
 def main():
-    """Main entry point for document ingestion"""
-    print("=" * 70)
-    print("AtlasRAG Document Ingestion Script")
-    print("=" * 70)
+    """Main entry point for document ingestion."""
+    parser = argparse.ArgumentParser(
+        description="Ingest documents into AtlasRAG vector database",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  python -m atlasrag.scripts.ingest_documents data/samples/\n"
+            "  python -m atlasrag.scripts.ingest_documents data/samples/hr-handbook.txt\n"
+            "  python -m atlasrag.scripts.ingest_documents data/ --recursive\n"
+        ),
+    )
+    parser.add_argument("path", help="File or directory to ingest")
+    parser.add_argument(
+        "--recursive", "-r", action="store_true", help="Search subdirectories"
+    )
+    args = parser.parse_args()
+
+    # Discover files
+    files = discover_files(args.path, args.recursive)
+    if not files:
+        print(f"No supported files found in: {args.path}")
+        print(f"Supported types: {', '.join(sorted(SUPPORTED_EXTENSIONS))}")
+        sys.exit(1)
+
+    print("=" * 60)
+    print("AtlasRAG Document Ingestion")
+    print("=" * 60)
+    print(f"Source: {args.path}")
+    print(f"Files found: {len(files)}")
     print()
-    print("TODO: Phase 5 - Implement this script")
+
+    # Initialize pipeline
+    try:
+        from atlasrag.src.ingestion.pipeline import IngestionPipeline
+
+        pipeline = IngestionPipeline()
+    except Exception as e:
+        print(f"Failed to initialize ingestion pipeline: {e}")
+        print()
+        print("Make sure the required services are running:")
+        print("  - Ollama (for embeddings): ollama serve")
+        print("  - Vector store (Chroma): docker compose up chroma")
+        print()
+        print("Or run the full stack: docker compose up")
+        sys.exit(1)
+
+    # Ingest each file
+    succeeded = 0
+    failed = 0
+
+    for i, file_path in enumerate(files, 1):
+        rel_path = file_path.relative_to(Path.cwd()) if file_path.is_absolute() else file_path
+        print(f"[{i}/{len(files)}] Ingesting: {rel_path}")
+
+        start = time.time()
+        try:
+            job_id = pipeline.ingest_file(str(file_path))
+            job = pipeline.get_status(job_id)
+            elapsed = time.time() - start
+            chunks = job.total_chunks if job else "?"
+            print(f"         OK — {chunks} chunks, {elapsed:.1f}s")
+            succeeded += 1
+        except Exception as e:
+            elapsed = time.time() - start
+            print(f"         FAILED — {e} ({elapsed:.1f}s)")
+            failed += 1
+
+    # Summary
     print()
-    print("This script will:")
-    print("  1. Scan directory for supported file types")
-    print("  2. Load each document (PDF, DOCX, TXT, HTML, MD)")
-    print("  3. Process through ingestion pipeline:")
-    print("     - Extract text")
-    print("     - Clean and normalize")
-    print("     - Split into chunks")
-    print("     - Generate embeddings")
-    print("     - Store in vector database")
-    print("  4. Track ingestion jobs and status")
-    print("  5. Report errors and completion")
-    print()
-    print("Supported file types: .pdf, .docx, .txt, .html, .md")
-    print()
-    print("Examples:")
-    print("  python ingest_documents.py /path/to/documents/")
-    print("  python ingest_documents.py /path/to/file.pdf")
-    print("  python ingest_documents.py /path/to/docs/ --recursive")
-    print()
+    print("-" * 60)
+    print(f"Done. {succeeded} succeeded, {failed} failed, {len(files)} total.")
 
 
 if __name__ == "__main__":

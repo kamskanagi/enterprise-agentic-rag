@@ -82,6 +82,7 @@ Thumbs.db
 *.md
 !README.md
 !**/README.md
+!CONTRIBUTING.md
 
 # Project-specific
 CLAUDE.md

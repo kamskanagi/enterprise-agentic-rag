@@ -1,0 +1,26 @@
+AtlasRAG Corp — Engineering Onboarding Guide
+=============================================
+Department: Engineering
+Audience: New Hires
+Last Updated: February 2025
+
+1. First Week Checklist
+During your first week, complete the following: set up your development laptop using the IT setup guide, request access to GitHub, Jira, and Confluence through the IT portal, join the #engineering and #team-standup Slack channels, and schedule 1:1 meetings with your manager and team lead. Your buddy will be assigned on Day 1 to help you navigate the first 30 days.
+
+2. Development Environment
+We use Python 3.11+ as our primary language. All projects use Poetry or pip for dependency management. Docker is required for local development — install Docker Desktop from docker.com. Our CI/CD pipeline runs on GitHub Actions. Code must pass linting (ruff), formatting (black), and type checking (mypy) before merging.
+
+3. Code Review Process
+All changes require a pull request with at least two approving reviews. PRs should be small and focused — aim for under 400 lines of changed code. Use conventional commit messages (feat:, fix:, docs:, refactor:, test:). Reviewers should respond within one business day. The PR author is responsible for resolving all comments before merging.
+
+4. Architecture Overview
+Our backend services follow a microservices architecture deployed on Kubernetes. Each service exposes a REST API built with FastAPI. Inter-service communication uses gRPC for synchronous calls and Apache Kafka for asynchronous events. All services emit structured logs in JSON format and export Prometheus metrics.
+
+5. On-Call Rotation
+Engineers join the on-call rotation after completing 90 days. The rotation runs weekly, starting Monday at 9:00 AM. On-call engineers must acknowledge pages within 15 minutes. Runbooks for common incidents are maintained in Confluence under the "Runbooks" space. After each incident, a blameless post-mortem is conducted within 48 hours.
+
+6. IT Equipment and Software
+Each engineer receives a MacBook Pro with 32GB RAM and 512GB SSD. Additional monitors, keyboards, and mice can be requested through the IT portal. Licensed software includes JetBrains IDEs, GitHub Copilot, and Figma. Personal software installations require IT approval. Lost or damaged equipment must be reported to IT within 24 hours.
+
+7. Learning and Development
+Engineers receive a $2,000 annual learning budget for conferences, courses, and books. Friday afternoons (2:00-5:00 PM) are reserved for learning and experimentation. Tech talks are held bi-weekly on Thursdays at 4:00 PM. Mentorship pairings are available through the People team for engineers seeking career growth.

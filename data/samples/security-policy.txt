@@ -1,0 +1,26 @@
+AtlasRAG Corp — Information Security Policy
+============================================
+Classification: Internal Use Only
+Last Updated: March 2025
+Approved By: Chief Information Security Officer
+
+1. Password Requirements
+All employees must use passwords with a minimum length of 14 characters, including at least one uppercase letter, one lowercase letter, one number, and one special character. Passwords must be changed every 90 days. Previous 12 passwords may not be reused. Multi-factor authentication (MFA) is mandatory for all systems.
+
+2. Data Classification
+Company data is classified into four levels: Public, Internal, Confidential, and Restricted. Public data may be freely shared. Internal data is for employees only. Confidential data requires encryption in transit and at rest. Restricted data requires additional access controls and audit logging.
+
+3. Acceptable Use
+Company devices and networks are provided for business purposes. Limited personal use is permitted during non-work hours. Employees must not install unauthorized software on company devices. All internet traffic on the corporate network is monitored and logged.
+
+4. Incident Response
+Security incidents must be reported to the Security Operations Center (SOC) within one hour of discovery. The SOC can be reached at security@atlasrag.com or extension 4911. Incidents are classified as P1 (Critical), P2 (High), P3 (Medium), or P4 (Low). P1 incidents trigger an immediate incident response team activation with a target resolution time of 4 hours.
+
+5. Access Control
+Access to systems follows the principle of least privilege. Access reviews are conducted quarterly by department managers. Terminated employee accounts are disabled within 2 hours of separation. Contractor access is limited to specific project resources and expires automatically after 90 days.
+
+6. Data Retention and Disposal
+Business records must be retained for a minimum of 7 years. Customer data must be deleted within 30 days of a deletion request per GDPR and CCPA requirements. Physical media must be destroyed using NIST 800-88 compliant methods. Cloud storage data must be cryptographically erased upon decommissioning.
+
+7. Network Security
+All external connections must pass through the corporate firewall and intrusion detection system. VPN is required for remote access to internal resources. Guest Wi-Fi networks are isolated from the corporate network. Network segmentation separates production, development, and administrative environments.
