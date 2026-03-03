@@ -34,10 +34,9 @@ def retriever_node(state: AgentState, llm=None, vector_store=None) -> dict:
     settings = get_settings()
     sub_queries = state.get("sub_queries", [state["query"]])
 
-    # Track repair iterations — if context already exists, this is a repair pass
-    existing_context = state.get("context", [])
+    # Track repair iterations — if repair_iterations > 0, this is a repair pass
     repair_iterations = state.get("repair_iterations", 0)
-    is_repair = bool(existing_context)
+    is_repair = repair_iterations > 0 or bool(state.get("answer"))
     if is_repair:
         repair_iterations += 1
 

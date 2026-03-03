@@ -134,17 +134,18 @@ class IngestionPipeline:
             logger.info(f"Storing in vector database: {len(chunks)} chunks")
             vector_store = get_vector_store()
 
-            # Prepare metadata for storage
-            metadatas = [
-                {
-                    **chunk.custom_metadata,
+            # Prepare metadata for storage (filter out None values — Chroma rejects them)
+            metadatas = []
+            for chunk in chunks:
+                meta = {
+                    **{k: v for k, v in chunk.custom_metadata.items() if v is not None},
                     "source": chunk.source_file,
-                    "page": chunk.page_number,
                     "chunk_index": chunk.chunk_index,
                     "document_id": document_id,
                 }
-                for chunk in chunks
-            ]
+                if chunk.page_number is not None:
+                    meta["page"] = chunk.page_number
+                metadatas.append(meta)
 
             # Store embeddings
             response = vector_store.add_documents(

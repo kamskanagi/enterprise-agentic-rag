@@ -5,7 +5,6 @@ Local, file-based vector database for development and small-scale deployments.
 
 from typing import List, Dict, Any, Optional
 import chromadb
-from chromadb.config import Settings as ChromaSettings
 
 from atlasrag.src.config.vector_store_config import ChromaConfig
 from .base import BaseVectorStore
@@ -43,12 +42,9 @@ class ChromaVectorStore(BaseVectorStore):
 
         try:
             # Initialize Chroma client with persistent storage
-            settings = ChromaSettings(
-                is_persistent=True,
-                persist_directory=config.persist_directory,
-                allow_reset=True,
+            self.client = chromadb.PersistentClient(
+                path=config.persist_directory,
             )
-            self.client = chromadb.Client(settings)
             self.collection = self.client.get_or_create_collection(
                 name=self.collection_name,
                 metadata={"hnsw:space": "cosine"},
@@ -89,8 +85,9 @@ class ChromaVectorStore(BaseVectorStore):
             elif len(metadata) != len(documents):
                 raise ValueError("Metadata must have same length as documents")
 
-            # Generate IDs if not provided
-            ids = [f"doc_{i}" for i in range(len(documents))]
+            # Generate unique IDs using existing count as offset
+            offset = self.collection.count()
+            ids = [f"doc_{offset + i}" for i in range(len(documents))]
 
             # Add to collection
             self.collection.add(
