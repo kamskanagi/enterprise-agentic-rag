@@ -10,8 +10,10 @@ import time
 from pathlib import Path
 
 from atlasrag.src.evaluation.metrics import (
+    compute_answer_correctness,
     compute_citation_coverage,
     compute_faithfulness_proxy,
+    compute_retrieval_hit_rate,
 )
 from atlasrag.src.evaluation.models import (
     Baseline,
@@ -66,7 +68,7 @@ class EvaluationRunner:
                 state = graph.invoke({"query": sample.query})
             except Exception as e:
                 logger.warning("Sample failed: %s — %s", sample.query[:50], e)
-                results.append(EvaluationResult(sample=sample))
+                results.append(EvaluationResult(sample=sample, error=f"{type(e).__name__}: {e}"))
                 latencies.append(0.0)
                 continue
             elapsed = time.perf_counter() - start
@@ -78,8 +80,13 @@ class EvaluationRunner:
                 c.get("content", "") if isinstance(c, dict) else str(c) for c in context_chunks
             ]
 
+            context_sources = [c.get("source", "") for c in context_chunks if isinstance(c, dict)]
+
             citation_cov = compute_citation_coverage(answer)
             faithfulness = compute_faithfulness_proxy(answer, context_texts)
+            # None (sample defines nothing to check) is excluded when aggregating
+            correctness = compute_answer_correctness(answer, sample.key_facts)
+            hit_rate = compute_retrieval_hit_rate(context_sources, sample.source_documents)
 
             result = EvaluationResult(
                 sample=sample,
@@ -88,6 +95,8 @@ class EvaluationRunner:
                     faithfulness=faithfulness,
                     citation_coverage=citation_cov,
                     answer_relevancy=0.0,
+                    answer_correctness=correctness or 0.0,
+                    retrieval_hit_rate=hit_rate or 0.0,
                     latency_p95=0.0,
                 ),
                 latency_seconds=elapsed,
@@ -153,6 +162,12 @@ class EvaluationRunner:
         mean_citation = sum(r.scores.citation_coverage for r in results) / n
         mean_relevancy = sum(r.scores.answer_relevancy for r in results) / n
 
+        # Only samples that define key facts / expected sources count; errored ones score 0
+        with_facts = [r.scores.answer_correctness for r in results if r.sample.key_facts]
+        with_sources = [r.scores.retrieval_hit_rate for r in results if r.sample.source_documents]
+        mean_correctness = sum(with_facts) / len(with_facts) if with_facts else 0.0
+        mean_hit_rate = sum(with_sources) / len(with_sources) if with_sources else 0.0
+
         # p95 latency
         valid_latencies = sorted(lat for lat in latencies if lat > 0)
         if valid_latencies:
@@ -166,5 +181,7 @@ class EvaluationRunner:
             faithfulness=mean_faith,
             citation_coverage=mean_citation,
             answer_relevancy=mean_relevancy,
+            answer_correctness=mean_correctness,
+            retrieval_hit_rate=mean_hit_rate,
             latency_p95=p95,
         )

@@ -72,3 +72,64 @@ def compute_faithfulness_proxy(answer: str, context: list[str]) -> float:
         sentence_scores.append(overlap / len(tokens))
 
     return sum(sentence_scores) / len(sentence_scores)
+
+
+_NUMBER_WORDS = {
+    "one": "1",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
+    "ten": "10",
+    "eleven": "11",
+    "twelve": "12",
+}
+_NUMBER_WORD_RE = re.compile(r"\b(" + "|".join(_NUMBER_WORDS) + r")\b")
+
+
+def _normalize(text: str) -> str:
+    """Lowercase, spell numbers as digits, and collapse whitespace."""
+    text = _NUMBER_WORD_RE.sub(lambda m: _NUMBER_WORDS[m.group(1)], text.lower())
+    return " ".join(text.split())
+
+
+def compute_answer_correctness(answer: str, key_facts: list[str]) -> float | None:
+    """Compute the fraction of a sample's key facts that appear in the answer.
+
+    Unlike the faithfulness proxy, this checks the answer against the golden
+    reference, so a fluent answer copied from the wrong passage scores zero.
+
+    Args:
+        answer: The generated answer text.
+        key_facts: Short phrases a correct answer must contain (e.g. "20 days").
+
+    Returns:
+        Float between 0.0 and 1.0, or None when the sample defines no key facts.
+    """
+    if not key_facts:
+        return None
+    normalized = _normalize(answer)
+    found = sum(1 for fact in key_facts if _normalize(fact) in normalized)
+    return found / len(key_facts)
+
+
+def compute_retrieval_hit_rate(
+    retrieved_sources: list[str], expected_sources: list[str]
+) -> float | None:
+    """Compute the fraction of expected source documents present in the context.
+
+    Args:
+        retrieved_sources: Source filenames of the retrieved context chunks.
+        expected_sources: Source filenames the answer should be grounded in.
+
+    Returns:
+        Float between 0.0 and 1.0, or None when the sample defines no sources.
+    """
+    if not expected_sources:
+        return None
+    retrieved = set(retrieved_sources)
+    return sum(1 for source in expected_sources if source in retrieved) / len(expected_sources)

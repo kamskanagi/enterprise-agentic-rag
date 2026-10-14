@@ -18,6 +18,7 @@ class EvaluationSample(BaseModel):
     query: str
     reference_answer: str
     source_documents: list[str] = Field(default_factory=list)
+    key_facts: list[str] = Field(default_factory=list)
 
 
 class MetricScores(BaseModel):
@@ -26,6 +27,8 @@ class MetricScores(BaseModel):
     faithfulness: float = 0.0
     citation_coverage: float = 0.0
     answer_relevancy: float = 0.0
+    answer_correctness: float = 0.0
+    retrieval_hit_rate: float = 0.0
     latency_p95: float = 0.0
 
 
@@ -36,6 +39,7 @@ class EvaluationResult(BaseModel):
     generated_answer: str = ""
     scores: MetricScores = Field(default_factory=MetricScores)
     latency_seconds: float = 0.0
+    error: str | None = None
 
 
 class EvaluationReport(BaseModel):

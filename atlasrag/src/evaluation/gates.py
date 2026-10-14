@@ -39,6 +39,19 @@ DEFAULT_GATES: list[QualityGate] = [
         threshold=0.05,
         direction="min",
     ),
+    # 0.04 catches losing half the facts of one question in a 12-question set
+    QualityGate(
+        name="Answer correctness drop",
+        metric_key="answer_correctness",
+        threshold=0.04,
+        direction="min",
+    ),
+    QualityGate(
+        name="Retrieval hit rate drop",
+        metric_key="retrieval_hit_rate",
+        threshold=0.04,
+        direction="min",
+    ),
     QualityGate(
         name="Latency increase",
         metric_key="latency_p95",

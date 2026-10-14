@@ -116,3 +116,16 @@ class TestQualityGates:
         )
         violations = check_gates(report, baseline, gates=custom_gates)
         assert len(violations) == 1
+
+    def test_gate_fail_answer_correctness(self):
+        """Losing one of 12 golden answers (~8 points) breaks the correctness gate."""
+        report = EvaluationReport(mean_scores=MetricScores(answer_correctness=0.75))
+        baseline = Baseline(scores=MetricScores(answer_correctness=0.833))
+        violations = check_gates(report, baseline)
+        assert [v["metric"] for v in violations] == ["answer_correctness"]
+
+    def test_gate_fail_retrieval_hit_rate(self):
+        report = EvaluationReport(mean_scores=MetricScores(retrieval_hit_rate=0.5))
+        baseline = Baseline(scores=MetricScores(retrieval_hit_rate=1.0))
+        violations = check_gates(report, baseline)
+        assert [v["metric"] for v in violations] == ["retrieval_hit_rate"]
