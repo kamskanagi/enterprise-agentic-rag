@@ -168,6 +168,15 @@ class TestDocumentChunker:
         assert len(chunks) > 0
         assert all(c.content for c in chunks)  # Non-empty content
 
+    def test_recursive_chunker_respects_chunk_size(self):
+        """A separator that yields one oversized chunk is rejected for a finer one."""
+        # Single-newline sections only: splitting on "\n\n" yields one ~1,400-char chunk
+        text = "\n".join(f"Section {i}. " + "Policy detail sentence. " * 10 for i in range(5))
+        config = ChunkingConfig(chunk_size=512, chunk_overlap=50)
+        chunks = RecursiveChunker(config).chunk(text, "test.txt")
+        assert len(chunks) > 1
+        assert all(len(c.content) <= 512 + 50 for c in chunks)
+
     def test_sentence_chunker(self, sample_text):
         """SentenceChunker chunks by sentences."""
         chunker = SentenceChunker()
@@ -253,6 +262,25 @@ class TestIngestionPipeline:
 
         assert job_id is not None
         assert job_id in pipeline.jobs
+
+    @patch("atlasrag.src.ingestion.pipeline.get_llm_client")
+    @patch("atlasrag.src.ingestion.pipeline.get_vector_store")
+    def test_ingest_file_keeps_first_and_last_lines(self, mock_vector_store, mock_llm):
+        """Ingestion must not drop real content at the start or end of a document."""
+        mock_llm.return_value.embed.return_value.embedding = [0.1, 0.2, 0.3]
+        mock_vector_store.return_value.add_documents.return_value.document_count = 1
+
+        lines = [f"Line {i}: policy fact number {i}." for i in range(14)]
+        with TemporaryDirectory() as tmpdir:
+            file_path = Path(tmpdir) / "policy.txt"
+            file_path.write_text("\n".join(lines))
+            IngestionPipeline().ingest_file(str(file_path))
+
+        stored = " ".join(
+            mock_vector_store.return_value.add_documents.call_args.kwargs["documents"]
+        )
+        assert "policy fact number 0." in stored
+        assert "policy fact number 13." in stored
 
     @patch("atlasrag.src.ingestion.pipeline.get_llm_client")
     @patch("atlasrag.src.ingestion.pipeline.get_vector_store")

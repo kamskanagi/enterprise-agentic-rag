@@ -212,10 +212,13 @@ class RecursiveChunker(DocumentChunker):
             try:
                 chunks = super().chunk(text, source_file, source_url, page_number, custom_metadata)
 
-                # Check if chunks are reasonably sized
+                # Check if chunks are reasonably sized: not too small on average, and
+                # none oversized (a coarse separator can leave one huge section)
                 if len(chunks) > 0:
                     avg_size = sum(len(c.content) for c in chunks) / len(chunks)
-                    if avg_size >= self.config.chunk_size * 0.5:
+                    max_size = self.config.chunk_size + self.config.chunk_overlap
+                    fits = all(len(c.content) <= max_size for c in chunks)
+                    if fits and avg_size >= self.config.chunk_size * 0.5:
                         # Good enough, use these chunks
                         return chunks
             except ChunkingError:

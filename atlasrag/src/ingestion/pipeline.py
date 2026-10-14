@@ -93,9 +93,11 @@ class IngestionPipeline:
 
             # Stage 2: Clean
             logger.info(f"Cleaning document: {file_path}")
+            # remove_headers strips the first/last 5 lines of the whole document, which
+            # deletes real content (e.g. a document's final section), so keep it off
             text = DocumentCleaner.clean_for_chunking(
                 text,
-                remove_headers=True,
+                remove_headers=False,
                 remove_urls=False,
                 remove_emails=False,
             )
