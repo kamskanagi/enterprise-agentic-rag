@@ -128,7 +128,8 @@ class TestAppFactory:
 
     def test_app_registers_routes(self):
         app = create_app()
-        paths = [route.path for route in app.routes]
+        # Use the public OpenAPI schema: newer FastAPI wraps included routers in app.routes
+        paths = app.openapi()["paths"]
         assert "/query" in paths
         assert "/ingest" in paths
         assert "/health" in paths

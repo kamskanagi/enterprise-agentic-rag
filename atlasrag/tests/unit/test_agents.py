@@ -642,10 +642,12 @@ class TestEnhancedRetriever:
         """On repair pass, top_k is increased by 1.5x."""
         llm = _make_llm_mock()
         vs = _make_vector_store_mock()
+        # First repair pass: the verifier rejected an existing answer
         state: AgentState = {
             "query": "q",
             "sub_queries": ["sub1"],
             "context": [{"content": "existing"}],
+            "answer": "Draft answer without citations.",
             "repair_iterations": 0,
         }
 
@@ -658,3 +660,23 @@ class TestEnhancedRetriever:
         # On repair, top_k should be int(10 * 1.5) = 15
         call_args = vs.similarity_search.call_args
         assert call_args.kwargs["top_k"] == 15
+
+    def test_existing_context_alone_is_not_repair(self):
+        """Context without an answer is a first pass, not a repair (infinite-loop guard)."""
+        llm = _make_llm_mock()
+        vs = _make_vector_store_mock()
+        state: AgentState = {
+            "query": "q",
+            "sub_queries": ["sub1"],
+            "context": [{"content": "existing"}],
+            "repair_iterations": 0,
+        }
+
+        with patch("atlasrag.src.agents.retriever.get_settings") as mock_settings:
+            mock_settings.return_value = MagicMock(
+                retrieval_top_k=10, similarity_threshold=0.7
+            )
+            result = retriever_node(state, llm=llm, vector_store=vs)
+
+        assert vs.similarity_search.call_args.kwargs["top_k"] == 10
+        assert result["repair_iterations"] == 0

@@ -190,6 +190,7 @@ def test_app():
     """
     from atlasrag.src.api.dependencies import get_agent_graph, get_ingestion_pipeline
     from atlasrag.src.api.main import create_app
+    from atlasrag.src.config import get_settings
 
     get_agent_graph.cache_clear()
     get_ingestion_pipeline.cache_clear()
