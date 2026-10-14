@@ -140,7 +140,9 @@ class Settings(BaseSettings):
     # Retrieval Configuration
     # =========================================================================
     retrieval_top_k: int = 5
-    similarity_threshold: float = 0.7
+    # 0.5: on the sample corpus with nomic-embed-text, correct top-1 chunks score
+    # 0.61-0.80 and the next distractors ~0.46-0.55 (0.7 dropped 5 of 12)
+    similarity_threshold: float = 0.5
     enable_reranking: bool = False
 
     # =========================================================================

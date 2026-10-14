@@ -173,7 +173,7 @@ class TestRAGConfig:
         """RAGConfig has sensible defaults."""
         config = RAGConfig()
         assert config.top_k == 5
-        assert config.similarity_threshold == 0.7
+        assert config.similarity_threshold == 0.5
         assert config.max_tokens == 2000
         assert config.temperature == 0.3
         assert config.system_prompt is None

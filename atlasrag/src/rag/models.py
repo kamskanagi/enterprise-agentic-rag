@@ -28,7 +28,7 @@ class RAGConfig(BaseModel):
     """Configuration for the RAG pipeline."""
 
     top_k: int = 5
-    similarity_threshold: float = 0.7
+    similarity_threshold: float = 0.5
     max_tokens: int = 2000
     temperature: float = 0.3
     system_prompt: str | None = None
