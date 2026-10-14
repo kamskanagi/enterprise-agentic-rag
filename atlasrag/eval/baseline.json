@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-10-14T16:22:38.727703Z",
+  "scores": {
+    "faithfulness": 0.684687864069959,
+    "citation_coverage": 0.20833333333333334,
+    "answer_relevancy": 0.0,
+    "answer_correctness": 1.0,
+    "retrieval_hit_rate": 1.0,
+    "latency_p95": 5.7563628340139985
+  },
+  "description": "qwen2.5:1.5b + nomic-embed-text, temperature 0, seed 42 (provisional: recorded locally)"
+}

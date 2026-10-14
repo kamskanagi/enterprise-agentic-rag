@@ -123,6 +123,8 @@ def main():
     print()
     print("-" * 60)
     print(f"Done. {succeeded} succeeded, {failed} failed, {len(files)} total.")
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

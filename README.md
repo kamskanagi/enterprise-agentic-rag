@@ -10,7 +10,7 @@ Production-grade Enterprise Agentic RAG platform. Ask questions about company do
 - **Provider flexibility** — Switch between Ollama (local/offline), OpenAI, or Gemini with one config change
 - **Production-ready** — Docker Compose for local dev, Kubernetes manifests for production
 - **Observability** — OpenTelemetry tracing, Prometheus metrics, Grafana dashboards
-- **Quality gates** — RAGAS-based evaluation suite with CI/CD quality thresholds
+- **Quality gates** — CI runs the agent on a local LLM over a golden set and blocks merges when answer correctness, retrieval, faithfulness, or citation coverage regress
 
 ## Architecture
 
@@ -130,6 +130,32 @@ pytest atlasrag/tests/ -v
 pytest atlasrag/tests/ --cov=atlasrag/src   # with coverage
 ```
 
+### Run the evaluation gate
+
+The `evaluate` CI job runs the full agent graph (`qwen2.5:1.5b` + `nomic-embed-text` on Ollama,
+temperature 0, fixed seed) over the 12-question golden set in `atlasrag/eval/golden_dataset.jsonl`
+and compares against `atlasrag/eval/baseline.json`. It fails if the graph cannot run, any
+question errors, or a metric drops past its threshold in `atlasrag/src/evaluation/gates.py`.
+
+```bash
+ollama pull qwen2.5:1.5b && ollama pull nomic-embed-text
+export OLLAMA_MODEL=qwen2.5:1.5b OLLAMA_TEMPERATURE=0 OLLAMA_SEED=42
+python -m atlasrag.scripts.ingest_documents data/samples
+python -m atlasrag.scripts.evaluate --compare-to atlasrag/eval/baseline.json --ignore-latency
+```
+
+| Metric | What it measures | Max drop |
+|--------|------------------|----------|
+| Answer correctness | Fraction of each question's `key_facts` present in the answer | 0.04 |
+| Retrieval hit rate | Expected source documents present in the retrieved context | 0.04 |
+| Faithfulness | Token overlap between answer and retrieved context (proxy) | 0.03 |
+| Citation coverage | Sentences carrying a `[n]` citation marker | 0.05 |
+
+Limitations: key facts are substring checks (they confirm the right fact is present, not that
+nothing wrong is said); 12 questions over 3 short documents is a smoke-level regression suite, not
+a benchmark; a 1.5B model is used so the gate fits on a CPU runner. To re-baseline after an
+intentional change, commit the `candidate-baseline` artifact (also shown in the job summary).
+
 ### Lint and format
 
 ```bash
@@ -178,7 +204,7 @@ atlasrag/
 │   ├── retrieval/     # Vector store abstraction (Chroma, Milvus)
 │   ├── llm/           # LLM provider abstraction (Ollama, OpenAI, Gemini)
 │   ├── rag/           # RAG pipeline and prompts
-│   ├── evaluation/    # RAGAS metrics and quality gates
+│   ├── evaluation/    # Golden-set metrics and quality gates
 │   └── observability/ # Logging, metrics, tracing
 ├── scripts/           # CLI tools (ingest, evaluate, health check)
 ├── eval/              # Golden evaluation dataset
@@ -203,7 +229,7 @@ data/
 | 8 | Verification & Repair Loop | Done |
 | 9 | FastAPI Server | Done |
 | 10 | Observability (Logging, Metrics, Tracing) | Done |
-| 11 | Evaluation Suite (RAGAS) | Done |
+| 11 | Evaluation Suite | Done |
 | 12 | CI/CD Quality Gates | Done |
 | 13 | Docker & Local Demo | Done |
 | 14 | Kubernetes Manifests | Done |
@@ -217,7 +243,7 @@ data/
 - **Vector DB**: ChromaDB (dev), Milvus (production)
 - **Database**: PostgreSQL
 - **Observability**: OpenTelemetry, Prometheus, Grafana
-- **Evaluation**: RAGAS
+- **Evaluation**: Golden-set metrics with CI quality gates (Ollama in GitHub Actions)
 - **Infrastructure**: Docker, Kubernetes
 
 ## License

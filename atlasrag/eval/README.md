@@ -1,119 +1,44 @@
 # Evaluation Dataset
 
-This directory contains the golden evaluation dataset and baseline metrics for AtlasRAG.
+Golden dataset and baseline used by the CI evaluation gate (`evaluate` job in
+`.github/workflows/ci.yml`).
 
 ## Golden Dataset
 
-**File:** `golden_dataset.jsonl` (to be created in Phase 11)
-
-**Format:** JSON Lines (one JSON object per line)
+**File:** `golden_dataset.jsonl` — 12 questions answerable from `data/samples/`
+(HR handbook, security policy, engineering onboarding). One question spans two documents.
 
 ```json
 {
-  "query": "What is our vacation policy?",
-  "reference_answer": "Employees receive 20 days of paid vacation annually",
-  "source_documents": [
-    {
-      "id": "doc1",
-      "content": "Our vacation policy provides 20 days of paid vacation annually for all full-time employees..."
-    },
-    {
-      "id": "doc2",
-      "content": "Additional unpaid leave may be requested with manager approval..."
-    }
-  ],
-  "expected_citations": ["doc1"],
-  "difficulty": "easy"
+  "query": "How many days of paid vacation do full-time employees receive per year?",
+  "reference_answer": "Full-time employees receive 20 days of paid vacation per year, accruing at 1.67 days per month.",
+  "source_documents": ["hr-handbook.txt"],
+  "key_facts": ["20 days"]
 }
 ```
 
 **Fields:**
-- `query`: User's question
-- `reference_answer`: Expected answer (for relevancy evaluation)
-- `source_documents`: Documents that should be retrieved
-- `expected_citations`: Which documents should be cited
-- `difficulty`: easy/medium/hard (for benchmarking)
+- `query`: User question sent to the agent graph
+- `reference_answer`: Ground-truth answer, written from the source document
+- `source_documents`: Filenames in `data/samples/` the answer must come from (retrieval hit rate)
+- `key_facts`: Short phrases a correct answer must contain (answer correctness). Matching is
+  case-insensitive and treats number words as digits ("three days" matches "3 days").
 
-## Dataset Statistics
+`test_evaluation.py::TestGoldenDataset` checks that every source document exists and that each
+reference answer contains all of its key facts.
 
-**To be populated in Phase 11:**
-- Total Q&A pairs: [target: 50-150]
-- Easy questions: [x]
-- Medium questions: [x]
-- Hard questions: [x]
-- Average query length: [x] tokens
-- Average document length: [x] tokens
+## Baseline
 
-## Evaluation Baselines
+**File:** `baseline.json` — mean scores the gate compares against. Thresholds live in
+`atlasrag/src/evaluation/gates.py`.
 
-**File:** `baselines.json` (to be created in Phase 11)
+To re-baseline after an intentional change, take the `candidate-baseline` artifact (also printed in
+the CI job summary) from a run of the change and commit it here, so the new scores are reviewed in
+the PR.
 
-Tracks target metrics:
-- Faithfulness: >90%
-- Answer Relevancy: >85%
-- Context Precision: >80%
-- Context Recall: >80%
-- Citation Coverage: >95%
-- p95 Latency: <5s
+## Adding Questions
 
-## How to Create Dataset
-
-### Step 1: Collect Questions
-Start with 10-20 questions across different categories:
-- Vacation/leave policies
-- Remote work
-- Health benefits
-- Equipment/tools
-- Compensation
-- Career development
-
-### Step 2: Source Documents
-Use actual company documents (PDFs, word docs) that answer these questions.
-
-### Step 3: Write Reference Answers
-Create ground-truth answers based on the documents.
-
-### Step 4: Format as JSON Lines
-Convert to the JSONL format above.
-
-### Step 5: Validate
-Ensure all reference answers are grounded in source documents.
-
-## Testing the Dataset
-
-Run evaluation:
-```bash
-python scripts/evaluate.py --dataset atlasrag/eval/golden_dataset.jsonl
-```
-
-Check coverage:
-```bash
-python -c "
-import jsonlines
-with jsonlines.open('eval/golden_dataset.jsonl') as reader:
-    data = list(reader)
-    print(f'Total Q&A pairs: {len(data)}')
-    difficulties = {}
-    for item in data:
-        d = item.get('difficulty', 'unknown')
-        difficulties[d] = difficulties.get(d, 0) + 1
-    print(f'Difficulty distribution: {difficulties}')
-"
-```
-
-## Updates Over Time
-
-- **Phase 11:** Initial dataset (50 Q&A pairs)
-- **Phase 12:** Expand to 100+ Q&A pairs
-- **Phase 15:** Domain-specific datasets for different use cases
-
-## CI/CD Integration
-
-The evaluation script (Phase 11) will:
-1. Load this dataset
-2. Run queries through AtlasRAG
-3. Compute metrics
-4. Compare to baselines
-5. Fail PR if regressions detected
-
-See [../src/evaluation/README.md](../src/evaluation/README.md) for details.
+1. Add or reuse a document in `data/samples/`.
+2. Write the question, a reference answer quoting the document's facts, and `key_facts` that would
+   be absent from a wrong answer (prefer exact figures: "14 characters", "$2,000").
+3. Run `pytest atlasrag/tests/unit/test_evaluation.py`, then re-baseline.

@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -15,7 +16,8 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install ruff black
+        # Pinned so a new linter release cannot turn CI red without a code change
+        run: pip install ruff==0.17.0 black==26.10.1
       - name: Ruff check
         run: ruff check atlasrag/src/ atlasrag/tests/
       - name: Black check
@@ -33,10 +35,22 @@ jobs:
       - name: Run tests
         run: pytest atlasrag/tests/ -v --cov=atlasrag/src --cov-report=term-missing --cov-fail-under=70
 
+  # Quality gate: runs the real agent graph (local LLM via Ollama) over the golden
+  # set and fails if answer correctness, retrieval hit rate, faithfulness or
+  # citation coverage regress past the thresholds in atlasrag/src/evaluation/gates.py.
   evaluate:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     needs: test
+    timeout-minutes: 30
+    env:
+      LLM_PROVIDER: ollama
+      OLLAMA_MODEL: qwen2.5:1.5b
+      OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+      # Greedy decoding + fixed seed: the same commit always scores the same
+      OLLAMA_TEMPERATURE: "0"
+      OLLAMA_SEED: "42"
+      VECTOR_STORE: chroma
+      CHROMA_PERSIST_DIRECTORY: ${{ runner.temp }}/chroma
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,6 +58,42 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: pip install -e ".[dev]"
-      - name: Run evaluation
-        run: python -m atlasrag.scripts.evaluate --dataset atlasrag/eval/golden_dataset.jsonl
-        continue-on-error: true
+      - name: Install Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.23.1 sh
+          for i in $(seq 1 30); do curl -sf http://localhost:11434/api/version && break; sleep 2; done
+      - name: Pull models
+        run: |
+          ollama pull "$OLLAMA_MODEL"
+          ollama pull "$OLLAMA_EMBEDDING_MODEL"
+      - name: Ingest sample documents
+        run: python -m atlasrag.scripts.ingest_documents data/samples
+      - name: Run evaluation gate
+        # Latency is skipped: shared runners are too noisy to gate on it.
+        # Explicit `shell: bash` enables pipefail, so `| tee` keeps the gate's exit code.
+        shell: bash
+        run: |
+          python -m atlasrag.scripts.evaluate \
+            --compare-to atlasrag/eval/baseline.json \
+            --ignore-latency \
+            --save-baseline "$RUNNER_TEMP/candidate-baseline.json" | tee "$RUNNER_TEMP/eval.txt"
+      - name: Publish results
+        if: always()
+        run: |
+          {
+            echo '### Evaluation results'
+            echo '```'
+            sed -n '/^Results/,$p' "$RUNNER_TEMP/eval.txt" 2>/dev/null || echo "No results"
+            echo '```'
+            echo '#### Candidate baseline (commit to atlasrag/eval/baseline.json to re-baseline)'
+            echo '```json'
+            cat "$RUNNER_TEMP/candidate-baseline.json" 2>/dev/null || echo "{}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload candidate baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-baseline
+          path: ${{ runner.temp }}/candidate-baseline.json
+          if-no-files-found: ignore
