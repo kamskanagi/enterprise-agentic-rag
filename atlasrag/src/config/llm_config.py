@@ -14,6 +14,9 @@ class OllamaConfig(BaseModel, frozen=True):
     base_url: str
     model: str
     embedding_model: str
+    # Optional sampling overrides; set temperature=0 and a seed for reproducible evals
+    temperature: float | None = None
+    seed: int | None = None
 
 
 class OpenAIConfig(BaseModel, frozen=True):

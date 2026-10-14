@@ -21,6 +21,7 @@ from atlasrag.src.config.llm_config import (
     OllamaConfig,
     OpenAIConfig,
 )
+from atlasrag.src.config.settings import Settings
 from atlasrag.src.llm import (
     BaseLLMProvider,
     EmbeddingError,
@@ -264,6 +265,42 @@ class TestOllamaProvider:
         assert response.content == "2 plus 2 is 4"
         assert response.provider == "ollama"
         assert response.model == "llama3.2"
+
+    @patch("atlasrag.src.llm.ollama_provider.httpx.post")
+    def test_ollama_generate_default_options_unchanged(self, mock_post, ollama_config):
+        """Without overrides, generation keeps temperature 0.7 and sends no seed."""
+        mock_post.return_value.json.return_value = {"response": "ok", "eval_count": 1}
+
+        OllamaProvider(ollama_config).generate("hi")
+
+        options = mock_post.call_args.kwargs["json"]["options"]
+        assert options["temperature"] == 0.7
+        assert "seed" not in options
+
+    @patch("atlasrag.src.llm.ollama_provider.httpx.post")
+    def test_ollama_generate_uses_configured_temperature_and_seed(self, mock_post):
+        """Configured temperature and seed make generation reproducible (used by evals)."""
+        mock_post.return_value.json.return_value = {"response": "ok", "eval_count": 1}
+        config = OllamaConfig(
+            base_url="http://localhost:11434",
+            model="llama3.2",
+            embedding_model="nomic-embed-text",
+            temperature=0.0,
+            seed=42,
+        )
+
+        OllamaProvider(config).generate("hi")
+
+        options = mock_post.call_args.kwargs["json"]["options"]
+        assert options["temperature"] == 0.0
+        assert options["seed"] == 42
+
+    def test_settings_pass_ollama_temperature_and_seed(self):
+        """OLLAMA_TEMPERATURE / OLLAMA_SEED settings reach OllamaConfig."""
+        settings = Settings(ollama_temperature=0.0, ollama_seed=7)
+        ollama = settings.get_llm_config().ollama
+        assert ollama.temperature == 0.0
+        assert ollama.seed == 7
 
     @patch("atlasrag.src.llm.ollama_provider.httpx.post")
     def test_ollama_generate_http_error(self, mock_post, ollama_config):

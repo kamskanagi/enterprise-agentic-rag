@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2"
     ollama_embedding_model: str = "nomic-embed-text"
+    ollama_temperature: float | None = None
+    ollama_seed: int | None = None
 
     # OpenAI (cloud)
     openai_api_key: SecretStr = SecretStr("")
@@ -211,6 +213,8 @@ class Settings(BaseSettings):
                 base_url=self.ollama_base_url,
                 model=self.ollama_model,
                 embedding_model=self.ollama_embedding_model,
+                temperature=self.ollama_temperature,
+                seed=self.ollama_seed,
             ),
             openai=OpenAIConfig(
                 api_key=self.openai_api_key,

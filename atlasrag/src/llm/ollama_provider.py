@@ -30,6 +30,8 @@ class OllamaProvider(BaseLLMProvider):
         self.base_url = config.base_url
         self.model = config.model
         self.embedding_model = config.embedding_model
+        self.temperature = config.temperature
+        self.seed = config.seed
 
     @retry(
         stop=stop_after_attempt(3),
@@ -40,14 +42,15 @@ class OllamaProvider(BaseLLMProvider):
         self,
         prompt: str,
         max_tokens: int = 2000,
-        temperature: float = 0.7,
+        temperature: float | None = None,
     ) -> LLMResponse:
         """Generate text using Ollama API.
 
         Args:
             prompt: Input prompt for generation
             max_tokens: Maximum tokens in response
-            temperature: Sampling temperature
+            temperature: Sampling temperature (defaults to the configured
+                temperature, else 0.7)
 
         Returns:
             LLMResponse: Response with generated text
@@ -56,6 +59,12 @@ class OllamaProvider(BaseLLMProvider):
             GenerationError: If generation fails
             RateLimitError: Not applicable for Ollama
         """
+        if temperature is None:
+            temperature = self.temperature if self.temperature is not None else 0.7
+        options = {"num_predict": max_tokens, "temperature": temperature}
+        if self.seed is not None:
+            options["seed"] = self.seed
+
         try:
             response = httpx.post(
                 f"{self.base_url}/api/generate",
@@ -63,10 +72,7 @@ class OllamaProvider(BaseLLMProvider):
                     "model": self.model,
                     "prompt": prompt,
                     "stream": False,
-                    "options": {
-                        "num_predict": max_tokens,
-                        "temperature": temperature,
-                    },
+                    "options": options,
                 },
                 timeout=120.0,
             )
