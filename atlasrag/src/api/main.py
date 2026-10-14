@@ -35,9 +35,7 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         setup_logging(obs_config)
-        logger.info(
-            "AtlasRAG API starting on %s:%s", api_config.host, api_config.port
-        )
+        logger.info("AtlasRAG API starting on %s:%s", api_config.host, api_config.port)
         yield
 
     app = FastAPI(

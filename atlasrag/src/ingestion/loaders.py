@@ -3,9 +3,8 @@
 Load text content from various file formats.
 """
 
-from pathlib import Path
-from typing import Tuple
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ class DocumentLoader:
     """Base class for document loaders."""
 
     @staticmethod
-    def load(file_path: str) -> Tuple[str, dict]:
+    def load(file_path: str) -> tuple[str, dict]:
         """Load document and extract text.
 
         Args:
@@ -35,7 +34,7 @@ class TextFileLoader(DocumentLoader):
     """Loader for plain text files."""
 
     @staticmethod
-    def load(file_path: str) -> Tuple[str, dict]:
+    def load(file_path: str) -> tuple[str, dict]:
         """Load plain text file.
 
         Args:
@@ -51,7 +50,7 @@ class TextFileLoader(DocumentLoader):
             if not path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
 
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 content = f.read()
 
             metadata = {
@@ -69,7 +68,7 @@ class PDFLoader(DocumentLoader):
     """Loader for PDF files."""
 
     @staticmethod
-    def load(file_path: str) -> Tuple[str, dict]:
+    def load(file_path: str) -> tuple[str, dict]:
         """Load PDF file and extract text.
 
         Args:
@@ -79,6 +78,7 @@ class PDFLoader(DocumentLoader):
             Tuple of (text_content, metadata)
         """
         from pypdf import PdfReader
+
         from atlasrag.src.ingestion.exceptions import ExtractionError
 
         try:
@@ -112,7 +112,7 @@ class DocxLoader(DocumentLoader):
     """Loader for Word documents."""
 
     @staticmethod
-    def load(file_path: str) -> Tuple[str, dict]:
+    def load(file_path: str) -> tuple[str, dict]:
         """Load DOCX file and extract text.
 
         Args:
@@ -122,6 +122,7 @@ class DocxLoader(DocumentLoader):
             Tuple of (text_content, metadata)
         """
         from docx import Document
+
         from atlasrag.src.ingestion.exceptions import ExtractionError
 
         try:
@@ -153,7 +154,7 @@ class MarkdownLoader(DocumentLoader):
     """Loader for Markdown files."""
 
     @staticmethod
-    def load(file_path: str) -> Tuple[str, dict]:
+    def load(file_path: str) -> tuple[str, dict]:
         """Load Markdown file.
 
         Args:
@@ -169,7 +170,7 @@ class MarkdownLoader(DocumentLoader):
             if not path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
 
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 content = f.read()
 
             metadata = {
@@ -187,7 +188,7 @@ class HTMLLoader(DocumentLoader):
     """Loader for HTML files."""
 
     @staticmethod
-    def load(file_path: str) -> Tuple[str, dict]:
+    def load(file_path: str) -> tuple[str, dict]:
         """Load HTML file and extract text.
 
         Args:
@@ -197,6 +198,7 @@ class HTMLLoader(DocumentLoader):
             Tuple of (text_content, metadata)
         """
         from bs4 import BeautifulSoup
+
         from atlasrag.src.ingestion.exceptions import ExtractionError
 
         try:
@@ -204,7 +206,7 @@ class HTMLLoader(DocumentLoader):
             if not path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
 
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 html_content = f.read()
 
             soup = BeautifulSoup(html_content, "html.parser")
@@ -238,7 +240,7 @@ class UniversalLoader:
     }
 
     @classmethod
-    def load(cls, file_path: str) -> Tuple[str, dict]:
+    def load(cls, file_path: str) -> tuple[str, dict]:
         """Load document from any supported file type.
 
         Args:
@@ -253,8 +255,10 @@ class UniversalLoader:
             ExtractionError: If extraction fails
         """
         from atlasrag.src.ingestion.exceptions import (
-            UnsupportedFileTypeError,
             FileNotFoundError as IngestionFileNotFoundError,
+        )
+        from atlasrag.src.ingestion.exceptions import (
+            UnsupportedFileTypeError,
         )
 
         path = Path(file_path)
@@ -267,8 +271,7 @@ class UniversalLoader:
         if file_ext not in cls.LOADER_MAP:
             supported = ", ".join(cls.LOADER_MAP.keys())
             raise UnsupportedFileTypeError(
-                f"File type '{file_ext}' not supported. "
-                f"Supported types: {supported}"
+                f"File type '{file_ext}' not supported. " f"Supported types: {supported}"
             )
 
         loader = cls.LOADER_MAP[file_ext]

@@ -1,7 +1,5 @@
 """Prompt templates for the RAG pipeline."""
 
-from typing import List
-
 from atlasrag.src.rag.exceptions import ContextBuildError
 from atlasrag.src.rag.models import SourceReference
 
@@ -15,7 +13,7 @@ Rules:
 5. If multiple sources support a claim, cite all relevant ones."""
 
 
-def build_rag_prompt(query: str, context_chunks: List[SourceReference]) -> str:
+def build_rag_prompt(query: str, context_chunks: list[SourceReference]) -> str:
     """Build a RAG prompt with numbered source references.
 
     Args:
@@ -34,9 +32,7 @@ def build_rag_prompt(query: str, context_chunks: List[SourceReference]) -> str:
             source_label = chunk.source
             if chunk.page is not None:
                 source_label += f", page {chunk.page}"
-            context_parts.append(
-                f"[{i}] (Source: {source_label})\n{chunk.content}"
-            )
+            context_parts.append(f"[{i}] (Source: {source_label})\n{chunk.content}")
 
         context_text = "\n\n".join(context_parts)
 

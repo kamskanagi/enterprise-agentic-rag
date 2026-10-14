@@ -6,7 +6,6 @@ with citations, and extracts citation references from the text.
 
 import logging
 import re
-from typing import Dict, List
 
 from atlasrag.src.agents.state import AgentState
 from atlasrag.src.llm.factory import get_llm_client
@@ -16,7 +15,7 @@ from atlasrag.src.rag.prompts import DEFAULT_SYSTEM_PROMPT, build_rag_prompt
 logger = logging.getLogger(__name__)
 
 
-def _context_to_source_refs(context: List[Dict]) -> List[SourceReference]:
+def _context_to_source_refs(context: list[dict]) -> list[SourceReference]:
     """Convert context dicts to SourceReference objects for prompt building."""
     return [
         SourceReference(
@@ -30,7 +29,7 @@ def _context_to_source_refs(context: List[Dict]) -> List[SourceReference]:
     ]
 
 
-def _extract_citations(text: str) -> List[str]:
+def _extract_citations(text: str) -> list[str]:
     """Extract citation references like [1], [2] from answer text."""
     return sorted(set(re.findall(r"\[\d+\]", text)))
 

@@ -5,7 +5,7 @@ Tests gate pass/fail logic, thresholds, and edge cases.
 
 import pytest
 
-from atlasrag.src.evaluation.gates import DEFAULT_GATES, QualityGate, check_gates
+from atlasrag.src.evaluation.gates import QualityGate, check_gates
 from atlasrag.src.evaluation.models import (
     Baseline,
     EvaluationReport,

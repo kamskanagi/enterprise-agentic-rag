@@ -4,7 +4,7 @@ TypedDict shared across all LangGraph agent nodes. Each node reads
 from and writes partial updates to this state.
 """
 
-from typing import Dict, List, TypedDict
+from typing import TypedDict
 
 
 class AgentState(TypedDict, total=False):
@@ -28,14 +28,14 @@ class AgentState(TypedDict, total=False):
     """
 
     query: str
-    sub_queries: List[str]
-    context: List[Dict]
+    sub_queries: list[str]
+    context: list[dict]
     answer: str
-    citations: List[str]
+    citations: list[str]
     confidence: float
     verification_passed: bool
     repair_iterations: int
-    verification_issues: List[Dict]
-    unsupported_claims: List[str]
+    verification_issues: list[dict]
+    unsupported_claims: list[str]
     model: str
     provider: str

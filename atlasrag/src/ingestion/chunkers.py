@@ -3,9 +3,8 @@
 Split documents into context-preserving chunks.
 """
 
-from typing import List
-from atlasrag.src.ingestion.models import DocumentChunk, ChunkingConfig
 from atlasrag.src.ingestion.exceptions import ChunkingError
+from atlasrag.src.ingestion.models import ChunkingConfig, DocumentChunk
 
 
 class DocumentChunker:
@@ -26,7 +25,7 @@ class DocumentChunker:
         source_url: str = None,
         page_number: int = None,
         custom_metadata: dict = None,
-    ) -> List[DocumentChunk]:
+    ) -> list[DocumentChunk]:
         """Split text into chunks with metadata.
 
         Args:
@@ -94,8 +93,8 @@ class DocumentChunker:
                     if overlap > 0 and len(current_chunk) > overlap:
                         overlap_text = current_chunk[-overlap:]
                         current_chunk = overlap_text + section_with_sep
-                        current_offset += len(current_chunk) - len(overlap_text) - len(
-                            section_with_sep
+                        current_offset += (
+                            len(current_chunk) - len(overlap_text) - len(section_with_sep)
                         )
                     else:
                         current_chunk = section_with_sep
@@ -131,7 +130,7 @@ class DocumentChunker:
         source_url: str = None,
         page_number: int = None,
         custom_metadata: dict = None,
-    ) -> List[DocumentChunk]:
+    ) -> list[DocumentChunk]:
         """Chunk text by character (fallback strategy).
 
         Args:
@@ -192,7 +191,7 @@ class RecursiveChunker(DocumentChunker):
         source_url: str = None,
         page_number: int = None,
         custom_metadata: dict = None,
-    ) -> List[DocumentChunk]:
+    ) -> list[DocumentChunk]:
         """Chunk using recursive separators.
 
         Args:
@@ -211,9 +210,7 @@ class RecursiveChunker(DocumentChunker):
             # Try this separator
             self.config.separator = separator
             try:
-                chunks = super().chunk(
-                    text, source_file, source_url, page_number, custom_metadata
-                )
+                chunks = super().chunk(text, source_file, source_url, page_number, custom_metadata)
 
                 # Check if chunks are reasonably sized
                 if len(chunks) > 0:
@@ -225,9 +222,7 @@ class RecursiveChunker(DocumentChunker):
                 continue
 
         # Fallback to character-level chunking
-        return self._chunk_by_character(
-            text, source_file, source_url, page_number, custom_metadata
-        )
+        return self._chunk_by_character(text, source_file, source_url, page_number, custom_metadata)
 
 
 class SentenceChunker(DocumentChunker):
@@ -240,7 +235,7 @@ class SentenceChunker(DocumentChunker):
         source_url: str = None,
         page_number: int = None,
         custom_metadata: dict = None,
-    ) -> List[DocumentChunk]:
+    ) -> list[DocumentChunk]:
         """Chunk by sentences.
 
         Args:
@@ -270,10 +265,7 @@ class SentenceChunker(DocumentChunker):
                 continue
 
             # Add space if not first sentence in chunk
-            if current_chunk:
-                test_chunk = current_chunk + " " + sentence
-            else:
-                test_chunk = sentence
+            test_chunk = current_chunk + " " + sentence if current_chunk else sentence
 
             if len(test_chunk) <= self.config.chunk_size or not current_chunk:
                 current_chunk = test_chunk

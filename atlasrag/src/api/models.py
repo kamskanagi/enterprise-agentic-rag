@@ -4,10 +4,8 @@ Pydantic models for all FastAPI endpoint inputs and outputs.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
-
 
 # ============================================================================
 # Query endpoint
@@ -18,30 +16,28 @@ class QueryRequest(BaseModel):
     """Request body for POST /query."""
 
     query: str = Field(..., min_length=1, description="Question to ask")
-    top_k: Optional[int] = Field(
-        None, ge=1, le=50, description="Number of chunks to retrieve"
-    )
+    top_k: int | None = Field(None, ge=1, le=50, description="Number of chunks to retrieve")
 
 
 class CitationDetail(BaseModel):
     """A single citation reference in the answer."""
 
     source: str
-    page: Optional[int] = None
-    chunk_index: Optional[int] = None
-    similarity_score: Optional[float] = None
+    page: int | None = None
+    chunk_index: int | None = None
+    similarity_score: float | None = None
 
 
 class QueryResponse(BaseModel):
     """Response body for POST /query."""
 
     answer: str
-    citations: List[str]
-    citation_details: List[CitationDetail] = []
+    citations: list[str]
+    citation_details: list[CitationDetail] = []
     confidence: float
     verification_passed: bool
-    model: Optional[str] = None
-    provider: Optional[str] = None
+    model: str | None = None
+    provider: str | None = None
 
 
 # ============================================================================
@@ -71,9 +67,9 @@ class JobStatusResponse(BaseModel):
     total_chunks: int = 0
     stored_chunks: int = 0
     progress: int = 0
-    error_message: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    error_message: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 # ============================================================================
@@ -85,7 +81,7 @@ class ComponentHealth(BaseModel):
     """Health status for a single component."""
 
     status: str  # "healthy" or "unhealthy"
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class HealthResponse(BaseModel):
@@ -93,7 +89,7 @@ class HealthResponse(BaseModel):
 
     status: str  # "healthy", "degraded", "unhealthy"
     timestamp: datetime
-    components: Dict[str, ComponentHealth] = {}
+    components: dict[str, ComponentHealth] = {}
 
 
 # ============================================================================
@@ -105,4 +101,4 @@ class ErrorResponse(BaseModel):
     """Standard error response body."""
 
     detail: str
-    error_type: Optional[str] = None
+    error_type: str | None = None

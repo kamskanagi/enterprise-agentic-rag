@@ -8,9 +8,10 @@ import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from atlasrag.src.config.llm_config import OllamaConfig
+
 from .base import BaseLLMProvider
-from .models import LLMResponse, EmbeddingResponse
-from .exceptions import ProviderUnavailableError, GenerationError, EmbeddingError
+from .exceptions import EmbeddingError, GenerationError
+from .models import EmbeddingResponse, LLMResponse
 
 
 class OllamaProvider(BaseLLMProvider):

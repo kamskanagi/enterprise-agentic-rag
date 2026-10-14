@@ -41,6 +41,4 @@ def setup_tracing(app: FastAPI, config: ObservabilityConfig) -> None:
         FastAPIInstrumentor.instrument_app(app)
         logger.info("OpenTelemetry tracing initialized")
     except ImportError:
-        logger.warning(
-            "OpenTelemetry packages not installed, skipping tracing setup"
-        )
+        logger.warning("OpenTelemetry packages not installed, skipping tracing setup")

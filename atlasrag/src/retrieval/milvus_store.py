@@ -3,28 +3,30 @@
 Scalable, distributed vector database for production deployments.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from pymilvus import (
-    connections,
     Collection,
-    FieldSchema,
     CollectionSchema,
     DataType,
+    FieldSchema,
+    connections,
 )
 
 from atlasrag.src.config.vector_store_config import MilvusConfig
+
 from .base import BaseVectorStore
+from .exceptions import (
+    DeletionError,
+    SearchError,
+    StorageError,
+    VectorStoreUnavailableError,
+)
 from .models import (
+    DeleteResponse,
     SearchResult,
     SearchResults,
     StorageResponse,
-    DeleteResponse,
-)
-from .exceptions import (
-    SearchError,
-    StorageError,
-    DeletionError,
-    VectorStoreUnavailableError,
 )
 
 
@@ -56,9 +58,11 @@ class MilvusVectorStore(BaseVectorStore):
                 host=config.host,
                 port=config.port,
                 user=config.user if config.user else "default",
-                password=config.password.get_secret_value()
-                if config.password.get_secret_value()
-                else "Milvus",
+                password=(
+                    config.password.get_secret_value()
+                    if config.password.get_secret_value()
+                    else "Milvus"
+                ),
             )
 
             # Get or create collection
@@ -69,9 +73,7 @@ class MilvusVectorStore(BaseVectorStore):
             self.collection.load()
 
         except Exception as e:
-            raise VectorStoreUnavailableError(
-                f"Failed to initialize Milvus: {str(e)}"
-            )
+            raise VectorStoreUnavailableError(f"Failed to initialize Milvus: {str(e)}")
 
     def _create_collection(self) -> None:
         """Create collection schema in Milvus."""
@@ -104,9 +106,9 @@ class MilvusVectorStore(BaseVectorStore):
 
     def add_documents(
         self,
-        documents: List[str],
-        embeddings: List[List[float]],
-        metadata: Optional[List[Dict[str, Any]]] = None,
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadata: list[dict[str, Any]] | None = None,
     ) -> StorageResponse:
         """Store document chunks with embeddings.
 
@@ -157,7 +159,7 @@ class MilvusVectorStore(BaseVectorStore):
 
     def similarity_search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
         similarity_threshold: float = 0.0,
     ) -> SearchResults:
@@ -219,7 +221,7 @@ class MilvusVectorStore(BaseVectorStore):
         except Exception as e:
             raise SearchError(f"Milvus search failed: {str(e)}")
 
-    def delete_documents(self, document_ids: List[str]) -> DeleteResponse:
+    def delete_documents(self, document_ids: list[str]) -> DeleteResponse:
         """Delete documents by ID.
 
         Args:
@@ -240,9 +242,7 @@ class MilvusVectorStore(BaseVectorStore):
                 )
 
             # Build filter expression
-            filter_expr = " or ".join(
-                [f'document_id == "{doc_id}"' for doc_id in document_ids]
-            )
+            filter_expr = " or ".join([f'document_id == "{doc_id}"' for doc_id in document_ids])
 
             # Delete matching documents
             self.collection.delete(filter_expr)

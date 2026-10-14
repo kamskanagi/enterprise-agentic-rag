@@ -10,32 +10,32 @@ Tests cover:
 - Retry logic via tenacity
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-import httpx
+from unittest.mock import MagicMock, patch
 
-from atlasrag.src.llm import (
-    get_llm_client,
-    BaseLLMProvider,
-    OllamaProvider,
-    OpenAIProvider,
-    GeminiProvider,
-    LLMResponse,
-    EmbeddingResponse,
-    LLMException,
-    UnsupportedProviderError,
-    ProviderUnavailableError,
-    GenerationError,
-    EmbeddingError,
-    RateLimitError,
-)
+import httpx
+import pytest
+from pydantic import SecretStr, ValidationError
+
 from atlasrag.src.config.llm_config import (
+    GeminiConfig,
     OllamaConfig,
     OpenAIConfig,
-    GeminiConfig,
 )
-from pydantic import SecretStr
-
+from atlasrag.src.llm import (
+    BaseLLMProvider,
+    EmbeddingError,
+    EmbeddingResponse,
+    GeminiProvider,
+    GenerationError,
+    LLMException,
+    LLMResponse,
+    OllamaProvider,
+    OpenAIProvider,
+    ProviderUnavailableError,
+    RateLimitError,
+    UnsupportedProviderError,
+    get_llm_client,
+)
 
 # ============================================================================
 # Test Fixtures
@@ -130,7 +130,7 @@ class TestLLMResponseModels:
             model="test",
             provider="ollama",
         )
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(ValidationError):
             response.content = "modified"
 
     def test_embedding_response_creation(self):
@@ -155,12 +155,12 @@ class TestLLMResponseModels:
             model="test",
             provider="gemini",
         )
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(ValidationError):
             response.embedding = [0.2]
 
     def test_llm_response_validation_missing_field(self):
         """LLMResponse requires all fields."""
-        with pytest.raises(Exception):  # ValidationError
+        with pytest.raises(ValidationError):
             LLMResponse(content="test", tokens_used=10)
 
     def test_embedding_response_validation_dimensions_match(self):
@@ -277,9 +277,7 @@ class TestOllamaProvider:
     @patch("atlasrag.src.llm.ollama_provider.httpx.post")
     def test_ollama_embed_success(self, mock_post, ollama_config):
         """OllamaProvider.embed returns EmbeddingResponse on success."""
-        mock_post.return_value.json.return_value = {
-            "embeddings": [[0.1, 0.2, 0.3]]
-        }
+        mock_post.return_value.json.return_value = {"embeddings": [[0.1, 0.2, 0.3]]}
         mock_post.return_value.raise_for_status = MagicMock()
 
         provider = OllamaProvider(ollama_config)
@@ -403,24 +401,26 @@ class TestGeminiProvider:
 
     def test_gemini_provider_creation(self, gemini_config):
         """GeminiProvider can be instantiated."""
-        with patch("atlasrag.src.llm.gemini_provider.genai.configure"):
-            with patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"):
-                provider = GeminiProvider(gemini_config)
-                assert provider.model == "gemini-1.5-flash"
-                assert provider.embedding_model == "models/text-embedding-004"
+        with (
+            patch("atlasrag.src.llm.gemini_provider.genai.configure"),
+            patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"),
+        ):
+            provider = GeminiProvider(gemini_config)
+            assert provider.model == "gemini-1.5-flash"
+            assert provider.embedding_model == "models/text-embedding-004"
 
     def test_gemini_provider_is_base_llm_provider(self, gemini_config):
         """GeminiProvider is a BaseLLMProvider."""
-        with patch("atlasrag.src.llm.gemini_provider.genai.configure"):
-            with patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"):
-                provider = GeminiProvider(gemini_config)
-                assert isinstance(provider, BaseLLMProvider)
+        with (
+            patch("atlasrag.src.llm.gemini_provider.genai.configure"),
+            patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"),
+        ):
+            provider = GeminiProvider(gemini_config)
+            assert isinstance(provider, BaseLLMProvider)
 
     @patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel")
     @patch("atlasrag.src.llm.gemini_provider.genai.configure")
-    def test_gemini_generate_success(
-        self, mock_configure, mock_gen_model_class, gemini_config
-    ):
+    def test_gemini_generate_success(self, mock_configure, mock_gen_model_class, gemini_config):
         """GeminiProvider.generate returns LLMResponse on success."""
         mock_gen_model = MagicMock()
         mock_gen_model_class.return_value = mock_gen_model
@@ -438,9 +438,7 @@ class TestGeminiProvider:
 
     @patch("atlasrag.src.llm.gemini_provider.genai.embed_content")
     @patch("atlasrag.src.llm.gemini_provider.genai.configure")
-    def test_gemini_embed_success(
-        self, mock_configure, mock_embed_content, gemini_config
-    ):
+    def test_gemini_embed_success(self, mock_configure, mock_embed_content, gemini_config):
         """GeminiProvider.embed returns EmbeddingResponse on success."""
         mock_embed_content.return_value = {"embedding": [0.1, 0.2, 0.3]}
 
@@ -454,9 +452,7 @@ class TestGeminiProvider:
 
     @patch("atlasrag.src.llm.gemini_provider.genai.embed_content")
     @patch("atlasrag.src.llm.gemini_provider.genai.configure")
-    def test_gemini_is_available_true(
-        self, mock_configure, mock_embed_content, gemini_config
-    ):
+    def test_gemini_is_available_true(self, mock_configure, mock_embed_content, gemini_config):
         """GeminiProvider.is_available returns True when accessible."""
         mock_embed_content.return_value = {"embedding": [0.1]}
 
@@ -466,9 +462,7 @@ class TestGeminiProvider:
 
     @patch("atlasrag.src.llm.gemini_provider.genai.embed_content")
     @patch("atlasrag.src.llm.gemini_provider.genai.configure")
-    def test_gemini_is_available_false(
-        self, mock_configure, mock_embed_content, gemini_config
-    ):
+    def test_gemini_is_available_false(self, mock_configure, mock_embed_content, gemini_config):
         """GeminiProvider.is_available returns False on error."""
         mock_embed_content.side_effect = Exception("Invalid API key")
 
@@ -525,10 +519,12 @@ class TestLLMFactory:
         from atlasrag.src.config import get_settings
 
         get_settings.cache_clear()
-        with patch("atlasrag.src.llm.gemini_provider.genai.configure"):
-            with patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"):
-                client = get_llm_client()
-                assert isinstance(client, GeminiProvider)
+        with (
+            patch("atlasrag.src.llm.gemini_provider.genai.configure"),
+            patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"),
+        ):
+            client = get_llm_client()
+            assert isinstance(client, GeminiProvider)
         get_llm_client.cache_clear()
         get_settings.cache_clear()
 
@@ -542,9 +538,11 @@ class TestLLMFactory:
         mock_llm_config.provider = "unsupported_provider"
         mock_settings.get_llm_config.return_value = mock_llm_config
 
-        with patch("atlasrag.src.llm.factory.get_settings", return_value=mock_settings):
-            with pytest.raises(UnsupportedProviderError):
-                get_llm_client()
+        with (
+            patch("atlasrag.src.llm.factory.get_settings", return_value=mock_settings),
+            pytest.raises(UnsupportedProviderError),
+        ):
+            get_llm_client()
 
         get_llm_client.cache_clear()
 
@@ -618,8 +616,10 @@ class TestProviderAvailability:
             assert hasattr(openai, "is_available")
             assert callable(openai.is_available)
 
-        with patch("atlasrag.src.llm.gemini_provider.genai.configure"):
-            with patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"):
-                gemini = GeminiProvider(gemini_config)
-                assert hasattr(gemini, "is_available")
-                assert callable(gemini.is_available)
+        with (
+            patch("atlasrag.src.llm.gemini_provider.genai.configure"),
+            patch("atlasrag.src.llm.gemini_provider.genai.GenerativeModel"),
+        ):
+            gemini = GeminiProvider(gemini_config)
+            assert hasattr(gemini, "is_available")
+            assert callable(gemini.is_available)

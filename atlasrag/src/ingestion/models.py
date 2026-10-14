@@ -3,9 +3,9 @@
 Type-safe models for document ingestion pipeline operations.
 """
 
-from typing import List, Dict, Any, Optional
 from datetime import datetime
-from enum import Enum
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -26,11 +26,11 @@ class DocumentChunk(BaseModel, frozen=True):
     content: str
     chunk_index: int
     source_file: str
-    source_url: Optional[str] = None
-    page_number: Optional[int] = None
+    source_url: str | None = None
+    page_number: int | None = None
     start_offset: int = 0
     end_offset: int = 0
-    custom_metadata: Dict[str, Any] = Field(default_factory=dict)
+    custom_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProcessedDocument(BaseModel, frozen=True):
@@ -51,12 +51,12 @@ class ProcessedDocument(BaseModel, frozen=True):
     document_id: str
     original_filename: str
     total_chunks: int
-    chunks: List[DocumentChunk]
+    chunks: list[DocumentChunk]
     extraction_status: str = "success"  # success, failed, partial
     cleaning_status: str = "success"
     chunking_status: str = "success"
     processed_at: datetime
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class IngestionJob(BaseModel, frozen=True):
@@ -79,9 +79,9 @@ class IngestionJob(BaseModel, frozen=True):
     status: str  # pending, processing, completed, failed
     total_chunks: int = 0
     stored_chunks: int = 0
-    error_message: Optional[str] = None
+    error_message: str | None = None
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     progress: int = Field(default=0, ge=0, le=100)
 
 

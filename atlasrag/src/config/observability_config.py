@@ -4,6 +4,7 @@ Frozen BaseModel class for logging and tracing configuration.
 """
 
 from typing import Literal
+
 from pydantic import BaseModel
 
 

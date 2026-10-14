@@ -9,22 +9,16 @@ Tests cover:
 """
 
 import pytest
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 
 from atlasrag.src.config import (
-    Settings,
-    get_settings,
-    LLMConfig,
-    OllamaConfig,
-    OpenAIConfig,
-    GeminiConfig,
-    VectorStoreConfig,
-    ChromaConfig,
-    MilvusConfig,
     APIConfig,
     CORSConfig,
     DatabaseConfig,
+    LLMConfig,
     ObservabilityConfig,
+    VectorStoreConfig,
+    get_settings,
 )
 
 
@@ -206,7 +200,7 @@ class TestLLMConfig:
     def test_llm_config_is_frozen(self, test_settings):
         """LLMConfig should be frozen (immutable)."""
         llm_config = test_settings.get_llm_config()
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(ValidationError):
             llm_config.provider = "gemini"
 
 
@@ -263,7 +257,7 @@ class TestVectorStoreConfig:
     def test_vector_store_config_is_frozen(self, test_settings):
         """VectorStoreConfig should be frozen (immutable)."""
         vs_config = test_settings.get_vector_store_config()
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(ValidationError):
             vs_config.backend = "milvus"
 
 
@@ -304,7 +298,7 @@ class TestAPIConfig:
     def test_api_config_is_frozen(self, test_settings):
         """APIConfig should be frozen (immutable)."""
         api_config = test_settings.get_api_config()
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(ValidationError):
             api_config.port = 9000
 
 
@@ -338,7 +332,7 @@ class TestObservabilityConfig:
     def test_observability_config_is_frozen(self, test_settings):
         """ObservabilityConfig should be frozen (immutable)."""
         obs_config = test_settings.get_observability_config()
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(ValidationError):
             obs_config.log_level = "ERROR"
 
 

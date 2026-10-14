@@ -10,13 +10,13 @@ from atlasrag.src.config import get_settings
 from atlasrag.src.ingestion.pipeline import IngestionPipeline
 
 
-@lru_cache()
+@lru_cache
 def get_agent_graph():
     """Return a compiled agent graph singleton."""
     return create_agent_graph()
 
 
-@lru_cache()
+@lru_cache
 def get_ingestion_pipeline():
     """Return an ingestion pipeline singleton."""
     return IngestionPipeline()

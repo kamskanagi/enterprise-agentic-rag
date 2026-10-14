@@ -1,9 +1,9 @@
 """Unit tests for the Basic RAG Pipeline (Phase 6)."""
 
 import pytest
-from unittest.mock import MagicMock
+from pydantic import ValidationError
 
-from atlasrag.src.llm.models import EmbeddingResponse, LLMResponse
+from atlasrag.src.llm.models import LLMResponse
 from atlasrag.src.rag.exceptions import (
     ContextBuildError,
     NoDocumentsFoundError,
@@ -13,7 +13,6 @@ from atlasrag.src.rag.models import RAGConfig, RAGResponse, SourceReference
 from atlasrag.src.rag.pipeline import BasicRAGPipeline
 from atlasrag.src.rag.prompts import DEFAULT_SYSTEM_PROMPT, build_rag_prompt
 from atlasrag.src.retrieval.models import SearchResult, SearchResults
-
 
 # ============================================================================
 # Fixtures
@@ -128,10 +127,8 @@ class TestSourceReference:
 
     def test_is_frozen(self):
         """SourceReference is immutable."""
-        ref = SourceReference(
-            content="text", source="doc.txt", similarity_score=0.8
-        )
-        with pytest.raises(Exception):
+        ref = SourceReference(content="text", source="doc.txt", similarity_score=0.8)
+        with pytest.raises(ValidationError):
             ref.content = "new text"
 
 
@@ -165,7 +162,7 @@ class TestRAGResponse:
             provider="p",
             retrieval_count=2,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             response.answer = "new answer"
 
 
@@ -339,9 +336,7 @@ class TestBasicRAGPipeline:
         assert "company_history.pdf" in prompt
         assert "test question" in prompt
 
-    def test_query_no_results_raises(
-        self, rag_pipeline, mock_vector_store, empty_search_results
-    ):
+    def test_query_no_results_raises(self, rag_pipeline, mock_vector_store, empty_search_results):
         """Pipeline.query raises NoDocumentsFoundError when no results."""
         mock_vector_store.similarity_search.return_value = empty_search_results
 
@@ -396,14 +391,10 @@ class TestBasicRAGPipeline:
         """is_ready returns True when LLM and vector store are available."""
         assert rag_pipeline.is_ready() is True
 
-    def test_is_ready_false_when_llm_unavailable(
-        self, mock_llm_provider, mock_vector_store
-    ):
+    def test_is_ready_false_when_llm_unavailable(self, mock_llm_provider, mock_vector_store):
         """is_ready returns False when LLM is unavailable."""
         mock_llm_provider.is_available.return_value = False
-        pipeline = BasicRAGPipeline(
-            llm=mock_llm_provider, vector_store=mock_vector_store
-        )
+        pipeline = BasicRAGPipeline(llm=mock_llm_provider, vector_store=mock_vector_store)
         assert pipeline.is_ready() is False
 
     def test_is_ready_false_when_vector_store_unavailable(
@@ -411,17 +402,11 @@ class TestBasicRAGPipeline:
     ):
         """is_ready returns False when vector store is unavailable."""
         mock_vector_store.is_available.return_value = False
-        pipeline = BasicRAGPipeline(
-            llm=mock_llm_provider, vector_store=mock_vector_store
-        )
+        pipeline = BasicRAGPipeline(llm=mock_llm_provider, vector_store=mock_vector_store)
         assert pipeline.is_ready() is False
 
-    def test_is_ready_false_on_exception(
-        self, mock_llm_provider, mock_vector_store
-    ):
+    def test_is_ready_false_on_exception(self, mock_llm_provider, mock_vector_store):
         """is_ready returns False when a check raises an exception."""
         mock_llm_provider.is_available.side_effect = Exception("connection error")
-        pipeline = BasicRAGPipeline(
-            llm=mock_llm_provider, vector_store=mock_vector_store
-        )
+        pipeline = BasicRAGPipeline(llm=mock_llm_provider, vector_store=mock_vector_store)
         assert pipeline.is_ready() is False

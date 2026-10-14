@@ -4,8 +4,6 @@ Tests dataset loading, metric computation, runner, baseline I/O, and comparison.
 """
 
 import json
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -18,12 +16,10 @@ from atlasrag.src.evaluation.metrics import (
 from atlasrag.src.evaluation.models import (
     Baseline,
     EvaluationReport,
-    EvaluationResult,
     EvaluationSample,
     MetricScores,
 )
 from atlasrag.src.evaluation.runner import EvaluationRunner, load_dataset
-
 
 # ============================================================================
 # Dataset Loading
@@ -34,16 +30,20 @@ class TestLoadDataset:
     def test_load_dataset(self, tmp_path):
         dataset_file = tmp_path / "test.jsonl"
         lines = [
-            json.dumps({
-                "query": "What is X?",
-                "reference_answer": "X is Y.",
-                "source_documents": ["doc1.pdf"],
-            }),
-            json.dumps({
-                "query": "What is Z?",
-                "reference_answer": "Z is W.",
-                "source_documents": ["doc2.pdf"],
-            }),
+            json.dumps(
+                {
+                    "query": "What is X?",
+                    "reference_answer": "X is Y.",
+                    "source_documents": ["doc1.pdf"],
+                }
+            ),
+            json.dumps(
+                {
+                    "query": "What is Z?",
+                    "reference_answer": "Z is W.",
+                    "source_documents": ["doc2.pdf"],
+                }
+            ),
         ]
         dataset_file.write_text("\n".join(lines))
 
@@ -54,9 +54,7 @@ class TestLoadDataset:
 
     def test_load_dataset_skips_blank_lines(self, tmp_path):
         dataset_file = tmp_path / "test.jsonl"
-        content = json.dumps({
-            "query": "Q", "reference_answer": "A", "source_documents": []
-        })
+        content = json.dumps({"query": "Q", "reference_answer": "A", "source_documents": []})
         dataset_file.write_text(f"{content}\n\n\n{content}\n")
 
         samples = load_dataset(dataset_file)

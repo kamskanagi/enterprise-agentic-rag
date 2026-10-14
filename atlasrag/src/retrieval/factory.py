@@ -7,11 +7,12 @@ based on configuration. Uses @lru_cache() for singleton pattern.
 from functools import lru_cache
 
 from atlasrag.src.config import get_settings
+
 from .base import BaseVectorStore
 from .exceptions import VectorStoreUnavailableError
 
 
-@lru_cache()
+@lru_cache
 def get_vector_store() -> BaseVectorStore:
     """
     Get vector store instance based on settings.
@@ -48,6 +49,5 @@ def get_vector_store() -> BaseVectorStore:
 
     else:
         raise VectorStoreUnavailableError(
-            f"Vector store backend '{backend}' is not supported. "
-            f"Choose from: chroma, milvus"
+            f"Vector store backend '{backend}' is not supported. " f"Choose from: chroma, milvus"
         )

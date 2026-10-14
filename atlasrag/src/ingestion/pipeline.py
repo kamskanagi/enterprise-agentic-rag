@@ -3,27 +3,22 @@
 Orchestrates the full ingestion workflow: load → clean → chunk → embed → store.
 """
 
-from typing import List, Optional
-from datetime import datetime
 import logging
 import uuid
+from datetime import datetime
 
 from atlasrag.src.config import get_settings
-from atlasrag.src.ingestion.loaders import UniversalLoader
-from atlasrag.src.ingestion.cleaners import DocumentCleaner
 from atlasrag.src.ingestion.chunkers import RecursiveChunker
+from atlasrag.src.ingestion.cleaners import DocumentCleaner
+from atlasrag.src.ingestion.exceptions import (
+    FileSizeExceededError,
+    IngestionException,
+)
+from atlasrag.src.ingestion.loaders import UniversalLoader
 from atlasrag.src.ingestion.models import (
-    DocumentChunk,
-    ProcessedDocument,
-    IngestionJob,
     ChunkingConfig,
     CleaningConfig,
-)
-from atlasrag.src.ingestion.exceptions import (
-    IngestionException,
-    FileSizeExceededError,
-    ExtractionError,
-    ValidationError,
+    IngestionJob,
 )
 from atlasrag.src.llm import get_llm_client
 from atlasrag.src.retrieval import get_vector_store
@@ -36,8 +31,8 @@ class IngestionPipeline:
 
     def __init__(
         self,
-        chunking_config: Optional[ChunkingConfig] = None,
-        cleaning_config: Optional[CleaningConfig] = None,
+        chunking_config: ChunkingConfig | None = None,
+        cleaning_config: CleaningConfig | None = None,
     ):
         """Initialize the ingestion pipeline.
 
@@ -181,7 +176,7 @@ class IngestionPipeline:
             )
             raise IngestionException(f"Ingestion failed: {str(e)}")
 
-    def ingest_files(self, file_paths: List[str], metadata: dict = None) -> List[str]:
+    def ingest_files(self, file_paths: list[str], metadata: dict = None) -> list[str]:
         """Ingest multiple document files.
 
         Args:
@@ -201,7 +196,7 @@ class IngestionPipeline:
 
         return job_ids
 
-    def get_status(self, job_id: str) -> Optional[IngestionJob]:
+    def get_status(self, job_id: str) -> IngestionJob | None:
         """Get the status of an ingestion job.
 
         Args:

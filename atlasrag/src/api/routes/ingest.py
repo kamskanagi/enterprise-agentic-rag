@@ -3,6 +3,7 @@
 POST /ingest — Upload a document for ingestion into the knowledge base.
 """
 
+import contextlib
 import logging
 import os
 import tempfile
@@ -25,10 +26,8 @@ def _run_ingestion(pipeline, file_path: str, job_id: str):
         logger.error("Background ingestion failed for job %s: %s", job_id, e)
     finally:
         # Clean up temp file
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(file_path)
-        except OSError:
-            pass
 
 
 @router.post("/ingest", response_model=IngestResponse)

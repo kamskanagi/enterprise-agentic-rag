@@ -8,9 +8,10 @@ import google.generativeai as genai
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from atlasrag.src.config.llm_config import GeminiConfig
+
 from .base import BaseLLMProvider
-from .models import LLMResponse, EmbeddingResponse
-from .exceptions import GenerationError, EmbeddingError, RateLimitError
+from .exceptions import EmbeddingError, GenerationError, RateLimitError
+from .models import EmbeddingResponse, LLMResponse
 
 
 class GeminiProvider(BaseLLMProvider):

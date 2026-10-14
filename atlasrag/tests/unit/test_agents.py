@@ -3,32 +3,30 @@
 Tests cover all agent nodes, the verifier router, and full graph invocation.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from atlasrag.src.agents.state import AgentState
+from atlasrag.src.agents.answerer import _extract_citations, answerer_node
+from atlasrag.src.agents.graph import create_agent_graph
 from atlasrag.src.agents.planner import planner_node
 from atlasrag.src.agents.retriever import retriever_node
-from atlasrag.src.agents.answerer import answerer_node, _extract_citations
+from atlasrag.src.agents.state import AgentState
 from atlasrag.src.agents.verifier import (
-    verifier_node,
-    should_repair,
-    _count_sentences,
-    _count_cited_sentences,
-    _split_paragraphs,
     _check_paragraph_citations,
-    _validate_citation_references,
-    _find_unsupported_claims,
+    _count_cited_sentences,
+    _count_sentences,
     _detect_contradictions,
+    _find_unsupported_claims,
+    _validate_citation_references,
+    should_repair,
+    verifier_node,
 )
-from atlasrag.src.agents.graph import create_agent_graph
-from atlasrag.src.llm.models import LLMResponse, EmbeddingResponse
+from atlasrag.src.llm.models import EmbeddingResponse, LLMResponse
 from atlasrag.src.retrieval.models import SearchResult, SearchResults
-
 
 # ============================================================================
 # Helpers
 # ============================================================================
+
 
 def _make_llm_mock(generate_content="Mock answer [1].", embed_vector=None):
     """Create a mock LLM provider."""
@@ -79,6 +77,7 @@ def _make_vector_store_mock(results=None):
 # TestAgentState
 # ============================================================================
 
+
 class TestAgentState:
     """Tests for AgentState TypedDict."""
 
@@ -106,6 +105,7 @@ class TestAgentState:
 # ============================================================================
 # TestPlannerAgent
 # ============================================================================
+
 
 class TestPlannerAgent:
     """Tests for the Planner node."""
@@ -156,6 +156,7 @@ class TestPlannerAgent:
 # TestRetrieverAgent
 # ============================================================================
 
+
 class TestRetrieverAgent:
     """Tests for the Retriever node."""
 
@@ -168,9 +169,7 @@ class TestRetrieverAgent:
         }
 
         with patch("atlasrag.src.agents.retriever.get_settings") as mock_settings:
-            mock_settings.return_value = MagicMock(
-                retrieval_top_k=5, similarity_threshold=0.7
-            )
+            mock_settings.return_value = MagicMock(retrieval_top_k=5, similarity_threshold=0.7)
             result = retriever_node(state, llm=llm, vector_store=vs)
 
         assert len(result["context"]) == 2
@@ -193,9 +192,7 @@ class TestRetrieverAgent:
         }
 
         with patch("atlasrag.src.agents.retriever.get_settings") as mock_settings:
-            mock_settings.return_value = MagicMock(
-                retrieval_top_k=5, similarity_threshold=0.7
-            )
+            mock_settings.return_value = MagicMock(retrieval_top_k=5, similarity_threshold=0.7)
             result = retriever_node(state, llm=llm, vector_store=vs)
 
         # Two sub-queries but same content → only 1 unique chunk
@@ -212,9 +209,7 @@ class TestRetrieverAgent:
         }
 
         with patch("atlasrag.src.agents.retriever.get_settings") as mock_settings:
-            mock_settings.return_value = MagicMock(
-                retrieval_top_k=5, similarity_threshold=0.7
-            )
+            mock_settings.return_value = MagicMock(retrieval_top_k=5, similarity_threshold=0.7)
             result = retriever_node(state, llm=llm, vector_store=vs)
 
         assert result["repair_iterations"] == 2
@@ -223,6 +218,7 @@ class TestRetrieverAgent:
 # ============================================================================
 # TestAnswererAgent
 # ============================================================================
+
 
 class TestAnswererAgent:
     """Tests for the Answerer node."""
@@ -234,8 +230,20 @@ class TestAnswererAgent:
         state: AgentState = {
             "query": "What are the benefits?",
             "context": [
-                {"content": "20 days vacation", "source": "handbook.pdf", "page": 5, "chunk_index": 0, "similarity_score": 0.9},
-                {"content": "Health insurance", "source": "benefits.pdf", "page": 2, "chunk_index": 1, "similarity_score": 0.85},
+                {
+                    "content": "20 days vacation",
+                    "source": "handbook.pdf",
+                    "page": 5,
+                    "chunk_index": 0,
+                    "similarity_score": 0.9,
+                },
+                {
+                    "content": "Health insurance",
+                    "source": "benefits.pdf",
+                    "page": 2,
+                    "chunk_index": 1,
+                    "similarity_score": 0.85,
+                },
             ],
         }
 
@@ -267,6 +275,7 @@ class TestAnswererAgent:
 # ============================================================================
 # TestVerifierAgent
 # ============================================================================
+
 
 class TestVerifierAgent:
     """Tests for the Verifier node and should_repair router."""
@@ -404,6 +413,7 @@ class TestVerifierAgent:
 # TestAgentGraph
 # ============================================================================
 
+
 class TestAgentGraph:
     """Tests for the full agent graph."""
 
@@ -423,9 +433,11 @@ class TestAgentGraph:
         )
         graph = create_agent_graph(llm=llm, vector_store=vs)
 
-        with patch("atlasrag.src.agents.planner.get_settings") as p_settings, \
-             patch("atlasrag.src.agents.retriever.get_settings") as r_settings, \
-             patch("atlasrag.src.agents.verifier.get_settings") as v_settings:
+        with (
+            patch("atlasrag.src.agents.planner.get_settings") as p_settings,
+            patch("atlasrag.src.agents.retriever.get_settings") as r_settings,
+            patch("atlasrag.src.agents.verifier.get_settings") as v_settings,
+        ):
 
             for m in [p_settings, r_settings, v_settings]:
                 m.return_value = MagicMock(
@@ -476,9 +488,11 @@ class TestAgentGraph:
         vs = _make_vector_store_mock()
         graph = create_agent_graph(llm=llm, vector_store=vs)
 
-        with patch("atlasrag.src.agents.planner.get_settings") as p_settings, \
-             patch("atlasrag.src.agents.retriever.get_settings") as r_settings, \
-             patch("atlasrag.src.agents.verifier.get_settings") as v_settings:
+        with (
+            patch("atlasrag.src.agents.planner.get_settings") as p_settings,
+            patch("atlasrag.src.agents.retriever.get_settings") as r_settings,
+            patch("atlasrag.src.agents.verifier.get_settings") as v_settings,
+        ):
 
             for m in [p_settings, r_settings, v_settings]:
                 m.return_value = MagicMock(
@@ -506,6 +520,7 @@ class TestAgentGraph:
 # ============================================================================
 # TestEnhancedVerifier (Phase 8)
 # ============================================================================
+
 
 class TestEnhancedVerifier:
     """Tests for Phase 8 enhanced verification features."""
@@ -625,8 +640,7 @@ class TestEnhancedVerifier:
             result = verifier_node(state)
 
         paragraph_issues = [
-            i for i in result["verification_issues"]
-            if i["type"] == "paragraph_missing_citation"
+            i for i in result["verification_issues"] if i["type"] == "paragraph_missing_citation"
         ]
         assert paragraph_issues == []
 
@@ -634,6 +648,7 @@ class TestEnhancedVerifier:
 # ============================================================================
 # TestEnhancedRetriever (Phase 8)
 # ============================================================================
+
 
 class TestEnhancedRetriever:
     """Tests for Phase 8 enhanced retriever (smarter repair)."""
@@ -652,9 +667,7 @@ class TestEnhancedRetriever:
         }
 
         with patch("atlasrag.src.agents.retriever.get_settings") as mock_settings:
-            mock_settings.return_value = MagicMock(
-                retrieval_top_k=10, similarity_threshold=0.7
-            )
+            mock_settings.return_value = MagicMock(retrieval_top_k=10, similarity_threshold=0.7)
             retriever_node(state, llm=llm, vector_store=vs)
 
         # On repair, top_k should be int(10 * 1.5) = 15
@@ -673,9 +686,7 @@ class TestEnhancedRetriever:
         }
 
         with patch("atlasrag.src.agents.retriever.get_settings") as mock_settings:
-            mock_settings.return_value = MagicMock(
-                retrieval_top_k=10, similarity_threshold=0.7
-            )
+            mock_settings.return_value = MagicMock(retrieval_top_k=10, similarity_threshold=0.7)
             result = retriever_node(state, llm=llm, vector_store=vs)
 
         assert vs.similarity_search.call_args.kwargs["top_k"] == 10

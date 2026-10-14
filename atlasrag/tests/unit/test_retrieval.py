@@ -9,29 +9,29 @@ Tests cover:
 - Backend availability checks
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+from pydantic import SecretStr, ValidationError
+
+from atlasrag.src.config.vector_store_config import ChromaConfig, MilvusConfig
 from atlasrag.src.retrieval import (
-    get_vector_store,
     BaseVectorStore,
     ChromaVectorStore,
+    DeleteResponse,
+    DeletionError,
+    DocumentMetadata,
     MilvusVectorStore,
+    QueryError,
+    SearchError,
     SearchResult,
     SearchResults,
+    StorageError,
     StorageResponse,
-    DeleteResponse,
-    DocumentMetadata,
     VectorStoreException,
     VectorStoreUnavailableError,
-    SearchError,
-    StorageError,
-    DeletionError,
-    QueryError,
+    get_vector_store,
 )
-from atlasrag.src.config.vector_store_config import ChromaConfig, MilvusConfig
-from pydantic import SecretStr
-
 
 # ============================================================================
 # Test Fixtures
@@ -116,7 +116,7 @@ class TestResponseModels:
             similarity_score=0.9,
             metadata={},
         )
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(ValidationError):
             result.content = "modified"
 
     def test_search_results_creation(self):
@@ -279,9 +279,7 @@ class TestMilvusVectorStore:
             assert store.collection_name == "test_collection"
 
     @patch("atlasrag.src.retrieval.milvus_store.connections")
-    def test_milvus_store_is_base_vector_store(
-        self, mock_connections, milvus_config
-    ):
+    def test_milvus_store_is_base_vector_store(self, mock_connections, milvus_config):
         """MilvusVectorStore is a BaseVectorStore."""
         mock_connections.list_collections.return_value = []
 
@@ -290,9 +288,7 @@ class TestMilvusVectorStore:
             assert isinstance(store, BaseVectorStore)
 
     @patch("atlasrag.src.retrieval.milvus_store.connections")
-    def test_milvus_add_documents_validation(
-        self, mock_connections, milvus_config
-    ):
+    def test_milvus_add_documents_validation(self, mock_connections, milvus_config):
         """MilvusVectorStore validates documents and embeddings."""
         mock_connections.list_collections.return_value = []
 
@@ -305,14 +301,10 @@ class TestMilvusVectorStore:
 
             # Test mismatched lengths
             with pytest.raises(StorageError):
-                store.add_documents(
-                    ["doc1"], [[0.1, 0.2], [0.3, 0.4]]
-                )
+                store.add_documents(["doc1"], [[0.1, 0.2], [0.3, 0.4]])
 
     @patch("atlasrag.src.retrieval.milvus_store.connections")
-    def test_milvus_similarity_search_validation(
-        self, mock_connections, milvus_config
-    ):
+    def test_milvus_similarity_search_validation(self, mock_connections, milvus_config):
         """MilvusVectorStore validates search parameters."""
         mock_connections.list_collections.return_value = []
 
@@ -342,7 +334,7 @@ class TestMilvusVectorStore:
         """MilvusVectorStore returns document count."""
         mock_connections.list_collections.return_value = []
 
-        with patch("atlasrag.src.retrieval.milvus_store.Collection") as mock_col:
+        with patch("atlasrag.src.retrieval.milvus_store.Collection"):
             store = MilvusVectorStore(milvus_config)
             store.collection.num_entities = 100
             assert store.get_document_count() == 100
@@ -384,12 +376,14 @@ class TestVectorStoreFactory:
         from atlasrag.src.config import get_settings
 
         get_settings.cache_clear()
-        with patch("atlasrag.src.retrieval.milvus_store.connections"):
-            with patch("atlasrag.src.retrieval.milvus_store.Collection"):
-                store = get_vector_store()
-                assert isinstance(store, MilvusVectorStore)
-                get_vector_store.cache_clear()
-                get_settings.cache_clear()
+        with (
+            patch("atlasrag.src.retrieval.milvus_store.connections"),
+            patch("atlasrag.src.retrieval.milvus_store.Collection"),
+        ):
+            store = get_vector_store()
+            assert isinstance(store, MilvusVectorStore)
+            get_vector_store.cache_clear()
+            get_settings.cache_clear()
 
     def test_factory_singleton_lru_cache(self):
         """Factory uses @lru_cache singleton pattern."""
@@ -442,9 +436,7 @@ class TestVectorStoreBackendAvailability:
         """Chroma availability check handles exception."""
         with patch("atlasrag.src.retrieval.chroma_store.chromadb.Client"):
             store = ChromaVectorStore(chroma_config)
-            store.client.list_collections = MagicMock(
-                side_effect=Exception("timeout")
-            )
+            store.client.list_collections = MagicMock(side_effect=Exception("timeout"))
 
             assert store.is_available() is False
 
@@ -458,17 +450,17 @@ class TestVectorStoreBackendAvailability:
             store = MilvusVectorStore(milvus_config)
             assert store.is_available() is True
 
-    def test_all_stores_have_availability_check(
-        self, chroma_config, milvus_config
-    ):
+    def test_all_stores_have_availability_check(self, chroma_config, milvus_config):
         """All stores implement is_available()."""
         with patch("atlasrag.src.retrieval.chroma_store.chromadb.Client"):
             chroma = ChromaVectorStore(chroma_config)
             assert hasattr(chroma, "is_available")
             assert callable(chroma.is_available)
 
-        with patch("atlasrag.src.retrieval.milvus_store.connections"):
-            with patch("atlasrag.src.retrieval.milvus_store.Collection"):
-                milvus = MilvusVectorStore(milvus_config)
-                assert hasattr(milvus, "is_available")
-                assert callable(milvus.is_available)
+        with (
+            patch("atlasrag.src.retrieval.milvus_store.connections"),
+            patch("atlasrag.src.retrieval.milvus_store.Collection"),
+        ):
+            milvus = MilvusVectorStore(milvus_config)
+            assert hasattr(milvus, "is_available")
+            assert callable(milvus.is_available)

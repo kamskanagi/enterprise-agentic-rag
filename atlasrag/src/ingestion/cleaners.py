@@ -3,12 +3,12 @@
 Preprocess extracted text for chunking and embedding.
 """
 
+import logging
 import re
 import unicodedata
-import logging
 
-from atlasrag.src.ingestion.models import CleaningConfig
 from atlasrag.src.ingestion.exceptions import CleaningError
+from atlasrag.src.ingestion.models import CleaningConfig
 
 logger = logging.getLogger(__name__)
 

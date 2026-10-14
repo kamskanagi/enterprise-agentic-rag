@@ -4,7 +4,7 @@ GET /health — System health check with component status.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
 
@@ -34,9 +34,7 @@ def health():
             )
             overall = "degraded"
     except Exception as e:
-        components["llm"] = ComponentHealth(
-            status="unhealthy", message=str(e)
-        )
+        components["llm"] = ComponentHealth(status="unhealthy", message=str(e))
         overall = "degraded"
 
     # Check vector store
@@ -50,9 +48,7 @@ def health():
             )
             overall = "degraded"
     except Exception as e:
-        components["vector_store"] = ComponentHealth(
-            status="unhealthy", message=str(e)
-        )
+        components["vector_store"] = ComponentHealth(status="unhealthy", message=str(e))
         overall = "degraded"
 
     # If all components are unhealthy, mark overall as unhealthy
@@ -61,6 +57,6 @@ def health():
 
     return HealthResponse(
         status=overall,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         components=components,
     )

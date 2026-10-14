@@ -3,7 +3,8 @@
 Type-safe response models for vector store operations with immutable (frozen) BaseModels.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -21,7 +22,7 @@ class SearchResult(BaseModel, frozen=True):
     document_id: str
     content: str
     similarity_score: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class SearchResults(BaseModel, frozen=True):
@@ -35,8 +36,8 @@ class SearchResults(BaseModel, frozen=True):
         vector_store: Name of the vector store backend used
     """
 
-    query: Optional[str]
-    results: List[SearchResult]
+    query: str | None
+    results: list[SearchResult]
     total_results: int
     vector_store: str
 
@@ -54,10 +55,10 @@ class DocumentMetadata(BaseModel, frozen=True):
     """
 
     source: str
-    page: Optional[int] = None
-    chunk_index: Optional[int] = None
-    timestamp: Optional[str] = None
-    custom_fields: Dict[str, Any] = {}
+    page: int | None = None
+    chunk_index: int | None = None
+    timestamp: str | None = None
+    custom_fields: dict[str, Any] = {}
 
 
 class StorageResponse(BaseModel, frozen=True):

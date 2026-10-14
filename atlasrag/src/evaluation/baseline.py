@@ -6,7 +6,7 @@ Save and load evaluation baselines for regression comparison.
 import json
 from pathlib import Path
 
-from atlasrag.src.evaluation.models import Baseline, EvaluationReport, MetricScores
+from atlasrag.src.evaluation.models import Baseline, EvaluationReport
 
 
 def save_baseline(report: EvaluationReport, path: str | Path) -> None:

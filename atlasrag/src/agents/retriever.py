@@ -5,7 +5,6 @@ and returns context chunks for the Answerer.
 """
 
 import logging
-from typing import Dict, List
 
 from atlasrag.src.agents.state import AgentState
 from atlasrag.src.config import get_settings
@@ -47,7 +46,7 @@ def retriever_node(state: AgentState, llm=None, vector_store=None) -> dict:
         logger.info("Repair pass: increased top_k from %d to %d", settings.retrieval_top_k, top_k)
 
     seen_contents: set = set()
-    all_chunks: List[Dict] = []
+    all_chunks: list[dict] = []
 
     for sub_query in sub_queries:
         embedding_response = llm.embed(sub_query)
@@ -61,13 +60,15 @@ def retriever_node(state: AgentState, llm=None, vector_store=None) -> dict:
             if result.content in seen_contents:
                 continue
             seen_contents.add(result.content)
-            all_chunks.append({
-                "content": result.content,
-                "source": result.metadata.get("source", "unknown"),
-                "page": result.metadata.get("page"),
-                "chunk_index": result.metadata.get("chunk_index"),
-                "similarity_score": result.similarity_score,
-            })
+            all_chunks.append(
+                {
+                    "content": result.content,
+                    "source": result.metadata.get("source", "unknown"),
+                    "page": result.metadata.get("page"),
+                    "chunk_index": result.metadata.get("chunk_index"),
+                    "similarity_score": result.similarity_score,
+                }
+            )
 
     logger.info(
         "Retriever found %d unique chunks from %d sub-queries",

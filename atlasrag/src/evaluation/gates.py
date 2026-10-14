@@ -3,7 +3,7 @@
 Pass/fail threshold logic for CI/CD quality gates.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from atlasrag.src.evaluation.models import Baseline, EvaluationReport
 
@@ -81,25 +81,29 @@ def check_gates(
             # Lower current is bad — check if drop exceeds threshold
             drop = base - current
             if drop > gate.threshold:
-                violations.append({
-                    "gate": gate.name,
-                    "metric": gate.metric_key,
-                    "current": current,
-                    "baseline": base,
-                    "delta": drop,
-                    "threshold": gate.threshold,
-                })
+                violations.append(
+                    {
+                        "gate": gate.name,
+                        "metric": gate.metric_key,
+                        "current": current,
+                        "baseline": base,
+                        "delta": drop,
+                        "threshold": gate.threshold,
+                    }
+                )
         else:
             # Higher current is bad — check if fractional increase exceeds threshold
             increase = (current - base) / base
             if increase > gate.threshold:
-                violations.append({
-                    "gate": gate.name,
-                    "metric": gate.metric_key,
-                    "current": current,
-                    "baseline": base,
-                    "delta": increase,
-                    "threshold": gate.threshold,
-                })
+                violations.append(
+                    {
+                        "gate": gate.name,
+                        "metric": gate.metric_key,
+                        "current": current,
+                        "baseline": base,
+                        "delta": increase,
+                        "threshold": gate.threshold,
+                    }
+                )
 
     return violations

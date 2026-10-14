@@ -3,23 +3,24 @@
 Local, file-based vector database for development and small-scale deployments.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 import chromadb
 
 from atlasrag.src.config.vector_store_config import ChromaConfig
+
 from .base import BaseVectorStore
+from .exceptions import (
+    DeletionError,
+    SearchError,
+    StorageError,
+    VectorStoreUnavailableError,
+)
 from .models import (
+    DeleteResponse,
     SearchResult,
     SearchResults,
     StorageResponse,
-    DeleteResponse,
-)
-from .exceptions import (
-    SearchError,
-    StorageError,
-    DeletionError,
-    DocumentNotFoundError,
-    VectorStoreUnavailableError,
 )
 
 
@@ -50,15 +51,13 @@ class ChromaVectorStore(BaseVectorStore):
                 metadata={"hnsw:space": "cosine"},
             )
         except Exception as e:
-            raise VectorStoreUnavailableError(
-                f"Failed to initialize Chroma: {str(e)}"
-            )
+            raise VectorStoreUnavailableError(f"Failed to initialize Chroma: {str(e)}")
 
     def add_documents(
         self,
-        documents: List[str],
-        embeddings: List[List[float]],
-        metadata: Optional[List[Dict[str, Any]]] = None,
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadata: list[dict[str, Any]] | None = None,
     ) -> StorageResponse:
         """Store document chunks with embeddings.
 
@@ -107,7 +106,7 @@ class ChromaVectorStore(BaseVectorStore):
 
     def similarity_search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
         similarity_threshold: float = 0.0,
     ) -> SearchResults:
@@ -147,6 +146,7 @@ class ChromaVectorStore(BaseVectorStore):
                     results["documents"][0],
                     results["metadatas"][0],
                     results["distances"][0],
+                    strict=False,
                 ):
                     # Convert distance to similarity (1 - distance for cosine)
                     similarity_score = 1 - distance
@@ -170,7 +170,7 @@ class ChromaVectorStore(BaseVectorStore):
         except Exception as e:
             raise SearchError(f"Chroma search failed: {str(e)}")
 
-    def delete_documents(self, document_ids: List[str]) -> DeleteResponse:
+    def delete_documents(self, document_ids: list[str]) -> DeleteResponse:
         """Delete documents by ID.
 
         Args:

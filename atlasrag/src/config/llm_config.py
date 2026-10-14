@@ -4,6 +4,7 @@ Frozen BaseModel classes for LLM provider configurations.
 """
 
 from typing import Literal
+
 from pydantic import BaseModel, SecretStr
 
 

@@ -4,7 +4,6 @@ Pydantic models for evaluation samples, metric scores, results, and baselines.
 """
 
 from datetime import UTC, datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -55,4 +54,4 @@ class Baseline(BaseModel):
 
     timestamp: datetime = Field(default_factory=_utcnow)
     scores: MetricScores = Field(default_factory=MetricScores)
-    description: Optional[str] = None
+    description: str | None = None

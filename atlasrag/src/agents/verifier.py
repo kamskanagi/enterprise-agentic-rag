@@ -14,7 +14,6 @@ Phase 8 enhancements:
 
 import logging
 import re
-from typing import Dict, List, Optional
 
 from atlasrag.src.agents.state import AgentState
 from atlasrag.src.config import get_settings
@@ -44,53 +43,55 @@ def _count_cited_sentences(text: str) -> int:
 # ============================================================================
 
 
-def _split_paragraphs(text: str) -> List[str]:
+def _split_paragraphs(text: str) -> list[str]:
     """Split text on double newlines into non-empty paragraphs."""
     paragraphs = re.split(r"\n\s*\n", text)
     return [p.strip() for p in paragraphs if p.strip()]
 
 
-def _check_paragraph_citations(text: str) -> List[Dict]:
+def _check_paragraph_citations(text: str) -> list[dict]:
     """Check each paragraph has at least one citation reference.
 
     Returns a list of issue dicts for paragraphs missing citations.
     """
     paragraphs = _split_paragraphs(text)
-    issues: List[Dict] = []
+    issues: list[dict] = []
     for i, paragraph in enumerate(paragraphs):
         if not re.search(r"\[\d+\]", paragraph):
-            issues.append({
-                "type": "paragraph_missing_citation",
-                "message": f"Paragraph {i + 1} has no citation references",
-                "severity": "warning",
-            })
+            issues.append(
+                {
+                    "type": "paragraph_missing_citation",
+                    "message": f"Paragraph {i + 1} has no citation references",
+                    "severity": "warning",
+                }
+            )
     return issues
 
 
-def _validate_citation_references(
-    citations: List[str], context: List[Dict]
-) -> List[Dict]:
+def _validate_citation_references(citations: list[str], context: list[dict]) -> list[dict]:
     """Ensure each cited [N] maps to an existing context source.
 
     Citations are 1-indexed references like [1], [2], etc.
     Context is a list of chunks — citation [N] maps to context[N-1].
     """
-    issues: List[Dict] = []
+    issues: list[dict] = []
     num_sources = len(context)
     for citation in citations:
         match = re.match(r"\[(\d+)\]", citation)
         if match:
             ref_num = int(match.group(1))
             if ref_num < 1 or ref_num > num_sources:
-                issues.append({
-                    "type": "invalid_citation_reference",
-                    "message": f"Citation {citation} references source {ref_num} but only {num_sources} sources available",
-                    "severity": "error",
-                })
+                issues.append(
+                    {
+                        "type": "invalid_citation_reference",
+                        "message": f"Citation {citation} references source {ref_num} but only {num_sources} sources available",
+                        "severity": "error",
+                    }
+                )
     return issues
 
 
-def _find_unsupported_claims(text: str) -> List[str]:
+def _find_unsupported_claims(text: str) -> list[str]:
     """Extract sentences that have no citation reference."""
     sentences = re.split(r"[.!?]+", text)
     unsupported = []
@@ -101,9 +102,7 @@ def _find_unsupported_claims(text: str) -> List[str]:
     return unsupported
 
 
-def _detect_contradictions(
-    context: List[Dict], llm=None
-) -> List[Dict]:
+def _detect_contradictions(context: list[dict], llm=None) -> list[dict]:
     """Use LLM to check if context sources contradict each other.
 
     Only called in strict mode when enable_contradiction_detection is True.
@@ -130,11 +129,13 @@ def _detect_contradictions(
         content = response.content.strip()
         if content == "NO_CONTRADICTIONS":
             return []
-        return [{
-            "type": "source_contradiction",
-            "message": content,
-            "severity": "warning",
-        }]
+        return [
+            {
+                "type": "source_contradiction",
+                "message": content,
+                "severity": "warning",
+            }
+        ]
     except Exception as e:
         logger.warning("Contradiction detection failed: %s", e)
         return []
@@ -168,11 +169,13 @@ def verifier_node(state: AgentState, llm=None) -> dict:
         return {
             "verification_passed": False,
             "confidence": 0.0,
-            "verification_issues": [{
-                "type": "empty_answer",
-                "message": "Answer contains no sentences",
-                "severity": "error",
-            }],
+            "verification_issues": [
+                {
+                    "type": "empty_answer",
+                    "message": "Answer contains no sentences",
+                    "severity": "error",
+                }
+            ],
             "unsupported_claims": [],
         }
 
@@ -192,7 +195,7 @@ def verifier_node(state: AgentState, llm=None) -> dict:
         }
 
     # Collect all issues
-    all_issues: List[Dict] = []
+    all_issues: list[dict] = []
 
     # 1. Paragraph citation checks
     paragraph_score = 1.0
@@ -216,20 +219,12 @@ def verifier_node(state: AgentState, llm=None) -> dict:
     unsupported = _find_unsupported_claims(answer)
 
     # 4. Contradiction detection (strict mode only)
-    if (
-        mode == "strict"
-        and settings.enable_contradiction_detection
-        and llm is not None
-    ):
+    if mode == "strict" and settings.enable_contradiction_detection and llm is not None:
         contradiction_issues = _detect_contradictions(context, llm=llm)
         all_issues.extend(contradiction_issues)
 
     # Weighted confidence: coverage 50%, paragraph 30%, valid refs 20%
-    confidence = (
-        sentence_coverage * 0.5
-        + paragraph_score * 0.3
-        + ref_score * 0.2
-    )
+    confidence = sentence_coverage * 0.5 + paragraph_score * 0.3 + ref_score * 0.2
 
     # Determine threshold
     if mode == "lenient":

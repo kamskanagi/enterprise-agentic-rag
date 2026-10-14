@@ -12,16 +12,18 @@ Usage:
 """
 
 from __future__ import annotations
+
 from functools import lru_cache
-from typing import Literal, Any
-from pydantic import SecretStr, field_validator, Field
+from typing import Any, Literal
+
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_settings.sources import DotEnvSettingsSource, EnvSettingsSource
 
-from .llm_config import LLMConfig, OllamaConfig, OpenAIConfig, GeminiConfig
-from .vector_store_config import VectorStoreConfig, ChromaConfig, MilvusConfig
 from .api_config import APIConfig, CORSConfig, DatabaseConfig
+from .llm_config import GeminiConfig, LLMConfig, OllamaConfig, OpenAIConfig
 from .observability_config import ObservabilityConfig
+from .vector_store_config import ChromaConfig, MilvusConfig, VectorStoreConfig
 
 
 class CommaSeparatedListSource(EnvSettingsSource):
@@ -106,9 +108,7 @@ class Settings(BaseSettings):
     # =========================================================================
     # Database Configuration
     # =========================================================================
-    database_url: SecretStr = SecretStr(
-        "postgresql://atlasrag:atlasrag@localhost:5432/atlasrag"
-    )
+    database_url: SecretStr = SecretStr("postgresql://atlasrag:atlasrag@localhost:5432/atlasrag")
     database_pool_size: int = 5
     database_max_overflow: int = 10
 
@@ -272,7 +272,7 @@ class Settings(BaseSettings):
         )
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """
     Get singleton Settings instance.

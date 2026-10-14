@@ -5,7 +5,8 @@ and implement the abstract methods.
 """
 
 from abc import ABC, abstractmethod
-from .models import LLMResponse, EmbeddingResponse
+
+from .models import EmbeddingResponse, LLMResponse
 
 
 class BaseLLMProvider(ABC):

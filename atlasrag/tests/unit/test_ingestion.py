@@ -7,29 +7,27 @@ Tests cover:
 - Full ingestion pipeline
 """
 
-import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from atlasrag.src.ingestion import (
-    IngestionPipeline,
-    UniversalLoader,
-    TextFileLoader,
-    DocumentChunk,
-    TextCleaner,
-    DocumentCleaner,
-    DocumentChunker,
-    RecursiveChunker,
-    SentenceChunker,
     ChunkingConfig,
     CleaningConfig,
-    IngestionException,
+    DocumentChunk,
+    DocumentChunker,
+    DocumentCleaner,
+    IngestionPipeline,
+    RecursiveChunker,
+    SentenceChunker,
+    TextCleaner,
+    TextFileLoader,
+    UniversalLoader,
     UnsupportedFileTypeError,
-    ExtractionError,
-    ChunkingError,
 )
-
+from atlasrag.src.ingestion.exceptions import ExtractionError
 
 # ============================================================================
 # Test Fixtures
@@ -194,7 +192,7 @@ class TestDocumentLoaders:
 
     def test_text_loader_missing_file(self):
         """TextFileLoader raises error for missing file."""
-        with pytest.raises(Exception):  # FileNotFoundError or ExtractionError
+        with pytest.raises(ExtractionError):
             TextFileLoader.load("/nonexistent/file.txt")
 
     def test_universal_loader_txt(self, temp_text_file):
@@ -284,8 +282,9 @@ class TestIngestionPipeline:
         """Pipeline can retrieve job status."""
         pipeline = IngestionPipeline()
         # Add a mock job
-        from atlasrag.src.ingestion.models import IngestionJob
         from datetime import datetime
+
+        from atlasrag.src.ingestion.models import IngestionJob
 
         job = IngestionJob(
             job_id="test_job",

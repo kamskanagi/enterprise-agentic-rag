@@ -8,10 +8,10 @@ TODO: Phases 2-11 - Add fixtures as modules are implemented
 Each phase will add fixtures for testing its module.
 """
 
-import pytest
 import os
 from pathlib import Path
 
+import pytest
 
 # ============================================================================
 # Configuration
@@ -27,6 +27,7 @@ os.environ.setdefault("LOG_LEVEL", "DEBUG")
 # ============================================================================
 # Phase 2 - Configuration Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def test_settings(monkeypatch):
@@ -65,7 +66,8 @@ def mock_llm_provider():
     Returns a MagicMock that behaves like a BaseLLMProvider.
     """
     from unittest.mock import MagicMock
-    from atlasrag.src.llm import LLMResponse, EmbeddingResponse
+
+    from atlasrag.src.llm import EmbeddingResponse, LLMResponse
 
     mock = MagicMock()
     mock.generate.return_value = LLMResponse(
@@ -114,7 +116,8 @@ def mock_vector_store():
     Returns a MagicMock that behaves like a BaseVectorStore.
     """
     from unittest.mock import MagicMock
-    from atlasrag.src.retrieval import SearchResults, StorageResponse, DeleteResponse
+
+    from atlasrag.src.retrieval import DeleteResponse, SearchResults, StorageResponse
 
     mock = MagicMock()
     mock.add_documents.return_value = StorageResponse(
@@ -234,18 +237,13 @@ def test_client(test_app):
 # Pytest Hooks (for all tests)
 # ============================================================================
 
+
 def pytest_configure(config):
     """Configure pytest before tests run"""
     # Add custom markers
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -261,6 +259,7 @@ def pytest_collection_modifyitems(config, items):
 # ============================================================================
 # Shared Utilities
 # ============================================================================
+
 
 @pytest.fixture
 def test_data_dir():
@@ -279,8 +278,10 @@ def cleanup_temp_files(tmp_path):
 # Session-Scoped Fixtures (run once per test session)
 # ============================================================================
 
+
 @pytest.fixture(scope="session")
 def session_id():
     """Provide unique session ID for test run"""
     import uuid
+
     return str(uuid.uuid4())

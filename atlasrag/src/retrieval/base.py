@@ -5,8 +5,9 @@ and implement the abstract methods.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
-from .models import SearchResult, SearchResults, StorageResponse, DeleteResponse
+from typing import Any
+
+from .models import DeleteResponse, SearchResults, StorageResponse
 
 
 class BaseVectorStore(ABC):
@@ -20,9 +21,9 @@ class BaseVectorStore(ABC):
     @abstractmethod
     def add_documents(
         self,
-        documents: List[str],
-        embeddings: List[List[float]],
-        metadata: Optional[List[Dict[str, Any]]] = None,
+        documents: list[str],
+        embeddings: list[list[float]],
+        metadata: list[dict[str, Any]] | None = None,
     ) -> StorageResponse:
         """
         Store document chunks with embeddings.
@@ -44,7 +45,7 @@ class BaseVectorStore(ABC):
     @abstractmethod
     def similarity_search(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         top_k: int = 5,
         similarity_threshold: float = 0.0,
     ) -> SearchResults:
@@ -66,7 +67,7 @@ class BaseVectorStore(ABC):
         pass
 
     @abstractmethod
-    def delete_documents(self, document_ids: List[str]) -> DeleteResponse:
+    def delete_documents(self, document_ids: list[str]) -> DeleteResponse:
         """
         Delete documents by ID.
 

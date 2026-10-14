@@ -8,20 +8,15 @@ import io
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 from atlasrag.src.api.main import create_app
 from atlasrag.src.api.models import (
-    CitationDetail,
     ErrorResponse,
     HealthResponse,
-    IngestResponse,
-    JobStatusResponse,
     QueryRequest,
     QueryResponse,
 )
-
 
 # ============================================================================
 # Helpers
@@ -33,9 +28,9 @@ def _make_test_client(graph_mock=None, pipeline_mock=None, settings_mock=None):
     app = create_app()
 
     if graph_mock is not None:
-        app.dependency_overrides[
-            _import("atlasrag.src.api.dependencies", "get_agent_graph")
-        ] = lambda: graph_mock
+        app.dependency_overrides[_import("atlasrag.src.api.dependencies", "get_agent_graph")] = (
+            lambda: graph_mock
+        )
 
     if pipeline_mock is not None:
         app.dependency_overrides[
@@ -282,8 +277,10 @@ class TestHealthEndpoint:
     def test_health_all_healthy(self):
         client = _make_test_client()
 
-        with patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm, \
-             patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs:
+        with (
+            patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm,
+            patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs,
+        ):
             mock_llm.return_value = MagicMock(is_available=MagicMock(return_value=True))
             mock_vs.return_value = MagicMock(is_available=MagicMock(return_value=True))
 
@@ -299,8 +296,10 @@ class TestHealthEndpoint:
     def test_health_llm_unhealthy(self):
         client = _make_test_client()
 
-        with patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm, \
-             patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs:
+        with (
+            patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm,
+            patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs,
+        ):
             mock_llm.return_value = MagicMock(is_available=MagicMock(return_value=False))
             mock_vs.return_value = MagicMock(is_available=MagicMock(return_value=True))
 
@@ -313,8 +312,10 @@ class TestHealthEndpoint:
     def test_health_all_unhealthy(self):
         client = _make_test_client()
 
-        with patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm, \
-             patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs:
+        with (
+            patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm,
+            patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs,
+        ):
             mock_llm.return_value = MagicMock(is_available=MagicMock(return_value=False))
             mock_vs.return_value = MagicMock(is_available=MagicMock(return_value=False))
 
@@ -326,8 +327,10 @@ class TestHealthEndpoint:
     def test_health_llm_exception(self):
         client = _make_test_client()
 
-        with patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm, \
-             patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs:
+        with (
+            patch("atlasrag.src.api.routes.health.get_llm_client") as mock_llm,
+            patch("atlasrag.src.api.routes.health.get_vector_store") as mock_vs,
+        ):
             mock_llm.side_effect = RuntimeError("Connection refused")
             mock_vs.return_value = MagicMock(is_available=MagicMock(return_value=True))
 

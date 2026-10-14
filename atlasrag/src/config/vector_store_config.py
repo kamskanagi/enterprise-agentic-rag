@@ -4,6 +4,7 @@ Frozen BaseModel classes for vector database configurations.
 """
 
 from typing import Literal
+
 from pydantic import BaseModel, SecretStr
 
 

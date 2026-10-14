@@ -7,7 +7,6 @@ import json
 import logging
 from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 from atlasrag.src.config.observability_config import ObservabilityConfig
@@ -21,7 +20,6 @@ from atlasrag.src.observability.metrics import (
     get_metrics_app,
 )
 from atlasrag.src.observability.tracing import setup_tracing
-
 
 # ============================================================================
 # JSON Formatter Tests

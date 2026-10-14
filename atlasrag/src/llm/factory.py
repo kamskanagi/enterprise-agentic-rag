@@ -7,11 +7,12 @@ based on configuration. Uses @lru_cache() for singleton pattern.
 from functools import lru_cache
 
 from atlasrag.src.config import get_settings
+
 from .base import BaseLLMProvider
 from .exceptions import UnsupportedProviderError
 
 
-@lru_cache()
+@lru_cache
 def get_llm_client() -> BaseLLMProvider:
     """
     Get LLM provider instance based on settings.

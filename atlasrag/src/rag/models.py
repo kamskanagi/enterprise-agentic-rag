@@ -1,8 +1,6 @@
 """Data models for the RAG pipeline."""
 
-from typing import Dict, List, Optional
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class SourceReference(BaseModel, frozen=True):
@@ -10,8 +8,8 @@ class SourceReference(BaseModel, frozen=True):
 
     content: str
     source: str
-    page: Optional[int] = None
-    chunk_index: Optional[int] = None
+    page: int | None = None
+    chunk_index: int | None = None
     similarity_score: float
 
 
@@ -19,7 +17,7 @@ class RAGResponse(BaseModel, frozen=True):
     """Response from the RAG pipeline."""
 
     answer: str
-    sources: List[SourceReference]
+    sources: list[SourceReference]
     query: str
     model: str
     provider: str
@@ -33,4 +31,4 @@ class RAGConfig(BaseModel):
     similarity_threshold: float = 0.7
     max_tokens: int = 2000
     temperature: float = 0.3
-    system_prompt: Optional[str] = None
+    system_prompt: str | None = None

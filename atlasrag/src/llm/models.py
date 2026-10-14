@@ -3,7 +3,6 @@
 Type-safe response models for LLM operations with immutable (frozen) BaseModels.
 """
 
-from typing import List
 from pydantic import BaseModel
 
 
@@ -35,7 +34,7 @@ class EmbeddingResponse(BaseModel, frozen=True):
         provider: Name of the provider (ollama, openai, gemini)
     """
 
-    embedding: List[float]
+    embedding: list[float]
     dimensions: int
     model: str
     provider: str

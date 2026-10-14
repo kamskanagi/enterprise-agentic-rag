@@ -46,9 +46,7 @@ def load_dataset(path: str | Path) -> list[EvaluationSample]:
 class EvaluationRunner:
     """Runs evaluation samples through the agent pipeline and collects metrics."""
 
-    def evaluate(
-        self, samples: list[EvaluationSample], graph
-    ) -> EvaluationReport:
+    def evaluate(self, samples: list[EvaluationSample], graph) -> EvaluationReport:
         """Run each sample through the graph and compute metrics.
 
         Args:
@@ -77,8 +75,7 @@ class EvaluationRunner:
             answer = state.get("answer", "")
             context_chunks = state.get("context", [])
             context_texts = [
-                c.get("content", "") if isinstance(c, dict) else str(c)
-                for c in context_chunks
+                c.get("content", "") if isinstance(c, dict) else str(c) for c in context_chunks
             ]
 
             citation_cov = compute_citation_coverage(answer)
@@ -104,9 +101,7 @@ class EvaluationRunner:
             results=results,
         )
 
-    def compare_to_baseline(
-        self, report: EvaluationReport, baseline: Baseline
-    ) -> list[dict]:
+    def compare_to_baseline(self, report: EvaluationReport, baseline: Baseline) -> list[dict]:
         """Compare report to baseline and return list of regressions.
 
         Args:
@@ -122,32 +117,33 @@ class EvaluationRunner:
             base = getattr(baseline.scores, metric)
             if base > 0 and current < base:
                 delta = base - current
-                regressions.append({
-                    "metric": metric,
-                    "current": current,
-                    "baseline": base,
-                    "delta": delta,
-                })
+                regressions.append(
+                    {
+                        "metric": metric,
+                        "current": current,
+                        "baseline": base,
+                        "delta": delta,
+                    }
+                )
 
         # Latency: regression if current is higher
         if (
             baseline.scores.latency_p95 > 0
             and report.mean_scores.latency_p95 > baseline.scores.latency_p95
         ):
-            regressions.append({
-                "metric": "latency_p95",
-                "current": report.mean_scores.latency_p95,
-                "baseline": baseline.scores.latency_p95,
-                "delta": report.mean_scores.latency_p95
-                - baseline.scores.latency_p95,
-            })
+            regressions.append(
+                {
+                    "metric": "latency_p95",
+                    "current": report.mean_scores.latency_p95,
+                    "baseline": baseline.scores.latency_p95,
+                    "delta": report.mean_scores.latency_p95 - baseline.scores.latency_p95,
+                }
+            )
 
         return regressions
 
     @staticmethod
-    def _aggregate_scores(
-        results: list[EvaluationResult], latencies: list[float]
-    ) -> MetricScores:
+    def _aggregate_scores(results: list[EvaluationResult], latencies: list[float]) -> MetricScores:
         """Compute mean scores across all results."""
         if not results:
             return MetricScores()

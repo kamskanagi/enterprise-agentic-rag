@@ -1,7 +1,6 @@
 """Basic RAG pipeline - end-to-end question answering with retrieval."""
 
 import logging
-from typing import Optional
 
 from atlasrag.src.llm.base import BaseLLMProvider
 from atlasrag.src.llm.factory import get_llm_client
@@ -22,9 +21,9 @@ class BasicRAGPipeline:
 
     def __init__(
         self,
-        llm: Optional[BaseLLMProvider] = None,
-        vector_store: Optional[BaseVectorStore] = None,
-        config: Optional[RAGConfig] = None,
+        llm: BaseLLMProvider | None = None,
+        vector_store: BaseVectorStore | None = None,
+        config: RAGConfig | None = None,
     ) -> None:
         self.llm = llm or get_llm_client()
         self.vector_store = vector_store or get_vector_store()
@@ -56,9 +55,7 @@ class BasicRAGPipeline:
         )
 
         if not search_results.results:
-            raise NoDocumentsFoundError(
-                f"No documents found for query: {question}"
-            )
+            raise NoDocumentsFoundError(f"No documents found for query: {question}")
 
         # 3. Convert search results to source references
         sources = [

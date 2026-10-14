@@ -55,9 +55,7 @@ def compute_faithfulness_proxy(answer: str, context: list[str]) -> float:
     # Build token set from all context
     context_tokens = set()
     for passage in context:
-        context_tokens.update(
-            word.lower() for word in re.findall(r"\b\w{3,}\b", passage)
-        )
+        context_tokens.update(word.lower() for word in re.findall(r"\b\w{3,}\b", passage))
 
     if not context_tokens:
         return 0.0
