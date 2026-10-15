@@ -50,8 +50,10 @@ jobs:
       OLLAMA_TEMPERATURE: "0"
       OLLAMA_SEED: "42"
       VECTOR_STORE: chroma
-      CHROMA_PERSIST_DIRECTORY: ${{ runner.temp }}/chroma
     steps:
+      # The runner context is not available in job-level env, so set the path here
+      - name: Set vector store path
+        run: echo "CHROMA_PERSIST_DIRECTORY=$RUNNER_TEMP/chroma" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
